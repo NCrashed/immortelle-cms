@@ -27,7 +27,7 @@ data ProductCreate = ProductCreate {
 , cproductAuthors       :: Set (AuthorInfo, Double)
 , cproductIncrustations :: Set Incrustation
 , cproductPrice         :: Price
-, cproductTimestamp     :: UTCTime
+, cproductCreation      :: Maybe Day
 , cproductLocation      :: Maybe Text
 , cproductBooked        :: Maybe Text
 , cproductInGroup       :: Bool
@@ -41,7 +41,7 @@ data ProductPatch = ProductPatch {
 , pproductAuthors       :: Set (AuthorInfo, Double)
 , pproductIncrustations :: Set Incrustation
 , pproductPrice         :: Price
-, pproductTimestamp     :: UTCTime
+, pproductCreation      :: Maybe Day
 , pproductLocation      :: Maybe Text
 , pproductBooked        :: Maybe Text
 , pproductInGroup       :: Bool

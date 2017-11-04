@@ -82,7 +82,8 @@ data ProductCategoryData =
     }
   | BraceletData {
       braceletSubType :: BraceletType
-    , braceletSize :: Maybe (Int, Int)
+    , braceletSizeMin :: Maybe Int
+    , braceletSizeMax :: Maybe Int
     }
   | RingData {
       ringSize :: Maybe Int
@@ -219,10 +220,11 @@ data Product = Product {
 , productAuthors       :: Set (Author, Double)
 , productIncrustations :: Set Incrustation
 , productPrice         :: Price
-, productTimestamp     :: UTCTime
+, productCreation      :: Maybe Day
 , productLocation      :: Maybe Text
 , productBooked        :: Maybe Text
 , productInGroup       :: Bool
+, productTimestamp     :: UTCTime
 } deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''Product
 deriveJSON defaultOptions ''Product

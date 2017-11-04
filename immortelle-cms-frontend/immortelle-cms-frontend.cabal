@@ -17,6 +17,7 @@ library
   exposed-modules:
     Immortelle.CMS.Frontend
     Immortelle.CMS.Frontend.Auth
+    Immortelle.CMS.Frontend.Calendar
     Immortelle.CMS.Frontend.Client
     Immortelle.CMS.Frontend.Menu
     Immortelle.CMS.Frontend.Monad
@@ -54,6 +55,7 @@ library
     FlexibleContexts
     FlexibleInstances
     GeneralizedNewtypeDeriving
+    LambdaCase
     MultiParamTypeClasses
     OverloadedLists
     OverloadedStrings

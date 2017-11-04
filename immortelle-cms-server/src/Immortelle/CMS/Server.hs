@@ -9,6 +9,7 @@ import Data.Maybe
 import Data.Monoid ((<>))
 import Data.Proxy
 import Data.Text (Text, pack)
+import Data.Time
 import Immortelle.CMS.API
 import Immortelle.CMS.Config
 import Immortelle.CMS.Monad
@@ -65,6 +66,7 @@ productPost ProductCreate{..} tok = do
   runAuth $ guardAuthToken tok
   i <- runUpdate GenProductId
   authors <- traverse loadAuthor $ S.toList cproductAuthors
+  t <- liftIO getCurrentTime
   runUpdate $ InsertProduct Product {
       productId = i
     , productName = cproductName
@@ -73,10 +75,11 @@ productPost ProductCreate{..} tok = do
     , productAuthors = S.fromList authors
     , productIncrustations = cproductIncrustations
     , productPrice = cproductPrice
-    , productTimestamp = cproductTimestamp
+    , productCreation = cproductCreation
     , productLocation = cproductLocation
     , productBooked = cproductBooked
     , productInGroup = cproductInGroup
+    , productTimestamp = t
     }
   pure i
 
@@ -92,7 +95,7 @@ productPut i ProductPatch{..} tok = do
     , productAuthors = S.fromList authors
     , productIncrustations = pproductIncrustations
     , productPrice = pproductPrice
-    , productTimestamp = pproductTimestamp
+    , productCreation = pproductCreation
     , productLocation = pproductLocation
     , productBooked = pproductBooked
     , productInGroup = pproductInGroup
