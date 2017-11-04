@@ -10,6 +10,8 @@ module Immortelle.CMS.Monad(
   , runQuery
   , module Immortelle.CMS.State
   , notFound
+  , AuthM(..)
+  , runAuth
   ) where
 
 import Control.Monad.Except
@@ -21,22 +23,32 @@ import Data.Monoid
 import Immortelle.CMS.Config
 import Immortelle.CMS.State
 import Servant.Server
+import Servant.Server.Auth.Token.Acid as A
+import Servant.Server.Auth.Token.Config
+import Servant.Server.Auth.Token.Model
 
 data Env = Env {
-  envConfig :: !Config
-, envDb     :: !(AcidState DB)
+  envConfig     :: !Config
+, envDb         :: !(AcidState DB)
+, envAuthConfig :: !AuthConfig
 }
 
 newEnv :: MonadIO m => Config -> m Env
 newEnv cfg = do
   db <- liftIO $ openLocalStateFrom (unConfigPath $ configState cfg) emptyDB
+  _ <- runAcidBackendT defaultAuthConfig db $ ensureAdmin 17 "admin" (configAdminPassword cfg) "admin@localhost"
   pure Env {
-      envConfig = cfg
-    , envDb     = db
+      envConfig     = cfg
+    , envDb         = db
+    , envAuthConfig = defaultAuthConfig
     }
 
 newtype ServerM a = ServerM { unServerM :: ReaderT Env (LoggingT Handler) a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadLogger, MonadError ServantErr)
+
+-- | Lift servant monad to server monad
+liftHandler :: Handler a -> ServerM a
+liftHandler = ServerM . lift . lift
 
 -- | Run server monad in servant handler
 runServerM :: Env -> ServerM a -> Handler a
@@ -75,3 +87,17 @@ notFound :: Maybe a -> ServerM a
 notFound ma = case ma of
   Nothing -> throwError err404 { errBody = "Cannot find record" }
   Just a -> pure a
+
+-- Derive HasStorage for 'AcidBackendT' with your 'DB'
+deriveAcidHasStorage ''DB
+
+-- | Special monad for authorisation actions
+newtype AuthM a = AuthM { unAuthM :: AcidBackendT DB IO a }
+  deriving (Functor, Applicative, Monad, MonadIO, MonadError ServantErr, HasAuthConfig, HasStorage)
+
+-- | Execution of authorisation actions that require 'AuthHandler' context
+runAuth :: AuthM a -> ServerM a
+runAuth m = do
+  cfg <- ServerM $ asks envAuthConfig
+  db <- ServerM $ asks envDb
+  liftHandler $ Handler. ExceptT $ runAcidBackendT cfg db $ unAuthM m

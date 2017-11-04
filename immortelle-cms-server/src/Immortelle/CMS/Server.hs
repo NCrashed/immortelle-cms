@@ -3,6 +3,8 @@ module Immortelle.CMS.Server(
   ) where
 
 import Control.Monad.Except
+import Data.Aeson.Unit
+import Data.Aeson.WithField
 import Data.Maybe
 import Data.Monoid ((<>))
 import Data.Proxy
@@ -14,7 +16,9 @@ import Immortelle.CMS.Types
 import Network.HTTP.Types.Status (ok200)
 import Network.Wai
 import Servant.API
+import Servant.API.Auth.Token
 import Servant.Server
+import Servant.Server.Auth.Token
 import Servant.Utils.StaticFiles (serveDirectoryFileServer)
 
 import qualified Data.Set as S
@@ -39,17 +43,26 @@ immortelleCmsServer =
   :<|> productPost
   :<|> productPut
   :<|> productDelete
+  :<|> proxyAuthSignin
+  :<|> proxyAuthSignout
+  :<|> proxyAuthTouch
 
-productGet :: ProductId -> ServerM Product
-productGet i = notFound =<< runQuery (GetProduct i)
+productGet :: ProductId -> MToken' '["product-read"] -> ServerM Product
+productGet i tok = do
+  runAuth $ guardAuthToken tok
+  lookupProduct i
+
+lookupProduct :: ProductId -> ServerM Product
+lookupProduct i = notFound =<< runQuery (GetProduct i)
 
 loadAuthor :: AuthorInfo -> ServerM Author
 loadAuthor ai = case ai of
   KnownAuthor code -> notFound =<< runQuery (GetAuthorByCode code)
   UnknownAuthor name -> pure $ Author name AuthorOther
 
-productPost :: ProductCreate -> ServerM ProductId
-productPost ProductCreate{..} = do
+productPost :: ProductCreate -> MToken' '["product-edit"] -> ServerM ProductId
+productPost ProductCreate{..} tok = do
+  runAuth $ guardAuthToken tok
   i <- runUpdate GenProductId
   authors <- traverse loadAuthor $ S.toList cproductAuthors
   runUpdate $ InsertProduct Product {
@@ -61,9 +74,10 @@ productPost ProductCreate{..} = do
     }
   pure i
 
-productPut :: ProductId -> ProductPatch -> ServerM ()
-productPut i ProductPatch{..} = do
-  p <- productGet i
+productPut :: ProductId -> ProductPatch -> MToken' '["product-edit"] -> ServerM ()
+productPut i ProductPatch{..} tok = do
+  runAuth $ guardAuthToken tok
+  p <- lookupProduct i
   authors <- traverse loadAuthor $ S.toList pproductAuthors
   runUpdate $ InsertProduct p {
       productCategory = pproductCategory
@@ -72,5 +86,16 @@ productPut i ProductPatch{..} = do
     , productIncrustations = pproductIncrustations
     }
 
-productDelete :: ProductId -> ServerM ()
-productDelete i = runUpdate $ DeleteProduct i
+productDelete :: ProductId -> MToken' '["product-edit"] -> ServerM ()
+productDelete i tok = do
+  runAuth $ guardAuthToken tok
+  runUpdate $ DeleteProduct i
+
+proxyAuthSignin :: Maybe Login -> Maybe Password -> Maybe Seconds -> ServerM (OnlyField "token" SimpleToken)
+proxyAuthSignin mlogin mpass mseconds = runAuth $ authSignin mlogin mpass mseconds
+
+proxyAuthSignout :: MToken' '[] -> ServerM Unit
+proxyAuthSignout tok = runAuth $ authSignout tok
+
+proxyAuthTouch :: Maybe Seconds -> MToken' '[] -> ServerM Unit
+proxyAuthTouch mseconds tok = runAuth $ authTouch mseconds tok

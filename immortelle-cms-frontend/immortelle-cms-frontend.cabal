@@ -16,18 +16,42 @@ library
   hs-source-dirs:      src
   exposed-modules:
     Immortelle.CMS.Frontend
+    Immortelle.CMS.Frontend.Auth
+    Immortelle.CMS.Frontend.Client
+    Immortelle.CMS.Frontend.Menu
+    Immortelle.CMS.Frontend.Product
+    Immortelle.CMS.Frontend.Utils
   build-depends:
-      base                >= 4.7    && < 5
+      base                      >= 4.7   && < 5
+    , aeson                     >= 0.11  && < 1.3
+    , aeson-injector            >= 1.0   && < 1.1
+    , bytestring                >= 0.10  && < 0.11
+    , containers                >= 0.5.7 && < 0.6
+    , data-default              >= 0.7   && < 0.8
+    , dependent-map             >= 0.2   && < 0.3
+    , either                    >= 4.4   && < 4.5
+    , ghcjs-base                >= 0.2   && < 0.3
+    , ghcjs-dom                 >= 0.2   && < 0.10
     , immortelle-cms-api
-    , reflex
-    , reflex-dom
+    , lens                      >= 4.14  && < 4.16
+    , reflex                    >= 0.5   && < 0.6
+    , reflex-dom                >= 0.4   && < 0.5
+    , reflex-material-bootstrap >= 0.2   && < 0.3
+    , safe                      >= 0.3   && < 0.4
+    , servant                   >= 0.9   && < 0.12
+    , servant-auth-token-api    >= 0.4   && < 0.5
+    , servant-reflex            >= 0.2   && < 0.4
+    , text                      >= 1.2   && < 1.3
+    , time                      >= 1.6   && < 1.7
   default-language:    Haskell2010
   default-extensions:
     DataKinds
     DeriveDataTypeable
     DeriveGeneric
+    FlexibleContexts
     FlexibleInstances
     GeneralizedNewtypeDeriving
+    OverloadedLists
     OverloadedStrings
     RecordWildCards
     RecursiveDo

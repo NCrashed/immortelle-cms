@@ -4,3 +4,4 @@ static: ./static
 frontendBlob: ./static/all.js
 detailedLogging: true
 state: ./db
+adminPassword: "123456"

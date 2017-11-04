@@ -3,14 +3,17 @@ module Immortelle.CMS.API(
   , AuthorInfo(..)
   , ProductCreate(..)
   , ProductPatch(..)
+  , module Immortelle.CMS.Pagination
   ) where
 
 import Data.Set (Set)
 import Data.Text (Text)
 import GHC.Generics
 import Immortelle.CMS.Aeson
+import Immortelle.CMS.Pagination
 import Immortelle.CMS.Types
 import Servant.API
+import Servant.API.Auth.Token
 
 data AuthorInfo = KnownAuthor AuthorCode | UnknownAuthor Text
   deriving (Eq, Ord, Generic)
@@ -33,7 +36,10 @@ data ProductPatch = ProductPatch {
 deriveJSON defaultOptions ''ProductPatch
 
 type ImmortelleCmsAPI =
-       "product" :> Capture "id" ProductId :> Get '[JSON] Product
-  :<|> "product" :> ReqBody '[JSON] ProductCreate :> Post '[JSON] ProductId
-  :<|> "product" :> Capture "id" ProductId :> ReqBody '[JSON] ProductPatch  :> Put '[JSON] ()
-  :<|> "product" :> Capture "id" ProductId :> Delete '[JSON] ()
+       "product" :> Capture "id" ProductId :> TokenHeader' '["product-read"] :> Get '[JSON] Product
+  :<|> "product" :> ReqBody '[JSON] ProductCreate :> TokenHeader' '["product-edit"] :> Post '[JSON] ProductId
+  :<|> "product" :> Capture "id" ProductId :> ReqBody '[JSON] ProductPatch :> TokenHeader' '["product-edit"] :> Put '[JSON] ()
+  :<|> "product" :> Capture "id" ProductId :> TokenHeader' '["product-edit"] :> Delete '[JSON] ()
+  :<|> AuthSigninMethod
+  :<|> AuthSignoutMethod
+  :<|> AuthTouchMethod

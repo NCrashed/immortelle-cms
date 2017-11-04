@@ -41,6 +41,7 @@ data Config = Config {
 , configFrontendBlob    :: !(Maybe ConfigPath)
 , configDetailedLogging :: !Bool
 , configState           :: !ConfigPath
+, configAdminPassword   :: !Text
 } deriving (Generic, Data)
 deriveJSON defaultOptions ''Config
 

@@ -6,6 +6,45 @@ module Immortelle.CMS.State(
   , GetProduct(..)
   , DeleteProduct(..)
   , GetAuthorByCode(..)
+  -- Auth inherited
+  , GetUserImpl(..)
+  , GetUserImplByLogin(..)
+  , ListUsersPaged(..)
+  , GetUserImplPermissions(..)
+  , DeleteUserPermissions(..)
+  , InsertUserPerm(..)
+  , InsertUserImpl(..)
+  , ReplaceUserImpl(..)
+  , DeleteUserImpl(..)
+  , HasPerm(..)
+  , GetFirstUserByPerm(..)
+  , SelectUserImplGroups(..)
+  , ClearUserImplGroups(..)
+  , InsertAuthUserGroup(..)
+  , InsertAuthUserGroupUsers(..)
+  , InsertAuthUserGroupPerms(..)
+  , GetAuthUserGroup(..)
+  , ListAuthUserGroupPermissions(..)
+  , ListAuthUserGroupUsers(..)
+  , ReplaceAuthUserGroup(..)
+  , ClearAuthUserGroupUsers(..)
+  , ClearAuthUserGroupPerms(..)
+  , DeleteAuthUserGroup(..)
+  , ListGroupsPaged(..)
+  , SetAuthUserGroupName(..)
+  , SetAuthUserGroupParent(..)
+  , InsertSingleUseCode(..)
+  , SetSingleUseCodeUsed(..)
+  , GetUnusedCode(..)
+  , InvalidatePermanentCodes(..)
+  , SelectLastRestoreCode(..)
+  , InsertUserRestore(..)
+  , FindRestoreCode(..)
+  , ReplaceRestoreCode(..)
+  , FindAuthToken(..)
+  , FindAuthTokenByValue(..)
+  , InsertAuthToken(..)
+  , ReplaceAuthToken(..)
   ) where
 
 import Control.Monad.Reader
@@ -16,10 +55,12 @@ import Data.Map.Strict (Map)
 import Immortelle.CMS.Types
 
 import qualified Data.Map.Strict as M
+import qualified Servant.Server.Auth.Token.Acid.Schema as A
 
 data DB = DB {
   dbProducts :: !(Map ProductId Product)
 , dbNextId   :: !ProductId
+, dbAuth     :: !A.Model
 }
 deriveSafeCopy 0 'base ''DB
 
@@ -27,7 +68,14 @@ emptyDB :: DB
 emptyDB = DB {
   dbProducts = mempty
 , dbNextId   = ProductId 0
+, dbAuth     = A.newModel
 }
+
+instance A.HasModelRead DB where
+  askModel = dbAuth
+
+instance A.HasModelWrite DB where
+  putModel db m = db { dbAuth = m }
 
 genProductId :: Update DB ProductId
 genProductId = do
@@ -55,10 +103,11 @@ getAuthorByCode ac = pure $ case ac of
   AuthorPolina -> Just $ Author "Полина" AuthorPolina
   AuthorOther -> Nothing
 
-makeAcidic ''DB [
+A.deriveQueries ''DB
+makeAcidic ''DB $ [
     'genProductId
   , 'insertProduct
   , 'getProduct
   , 'deleteProduct
   , 'getAuthorByCode
-  ]
+  ] ++ A.acidQueries

@@ -3,8 +3,8 @@
 }:
 mkDerivation {
   pname = "servant-auth";
-  version = "0.3.0.0";
-  sha256 = "085xfhrim0y067yab3pwgiilk7zzdg8b7dz3i08f4cfd633an8km";
+  version = "0.2.7.0";
+  sha256 = "0j0hfal64qjdbif9a6vy7dv4zn0pmkspn0pwafhsyh5adgqkrhxa";
   libraryHaskellDepends = [ base ];
   testHaskellDepends = [ base doctest Glob hspec QuickCheck yaml ];
   homepage = "http://github.com/plow-technologies/servant-auth#readme";

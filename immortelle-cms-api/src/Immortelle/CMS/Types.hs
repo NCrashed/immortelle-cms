@@ -127,6 +127,9 @@ deriveJSON defaultNewtypeOptions ''ProductId
 instance FromHttpApiData ProductId where
   parseUrlPiece = fmap ProductId . parseUrlPiece
 
+instance ToHttpApiData ProductId where
+  toUrlPiece = toUrlPiece . unProductId
+
 -- | User friendly display of product id and properties (артикул)
 data VendorCode = VendorCode {
   vcodeId            :: ProductId
