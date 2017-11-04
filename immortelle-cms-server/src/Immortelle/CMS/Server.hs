@@ -67,6 +67,7 @@ productPost ProductCreate{..} tok = do
   authors <- traverse loadAuthor $ S.toList cproductAuthors
   runUpdate $ InsertProduct Product {
       productId = i
+    , productName = cproductName
     , productCategory = cproductCategory
     , productPatination = cproductPatination
     , productAuthors = S.fromList authors
@@ -80,7 +81,8 @@ productPut i ProductPatch{..} tok = do
   p <- lookupProduct i
   authors <- traverse loadAuthor $ S.toList pproductAuthors
   runUpdate $ InsertProduct p {
-      productCategory = pproductCategory
+      productName = pproductName 
+    , productCategory = pproductCategory
     , productPatination = pproductPatination
     , productAuthors = S.fromList authors
     , productIncrustations = pproductIncrustations

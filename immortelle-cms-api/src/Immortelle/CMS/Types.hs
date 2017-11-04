@@ -143,6 +143,7 @@ deriveJSON defaultOptions ''VendorCode
 
 data Product = Product {
   productId            :: ProductId
+, productName          :: Text 
 , productCategory      :: ProductCategory
 , productPatination    :: Maybe Patination
 , productAuthors       :: Set Author

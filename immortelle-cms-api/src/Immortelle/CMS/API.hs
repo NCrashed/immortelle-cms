@@ -20,7 +20,8 @@ data AuthorInfo = KnownAuthor AuthorCode | UnknownAuthor Text
 deriveJSON defaultOptions ''AuthorInfo
 
 data ProductCreate = ProductCreate {
-  cproductCategory      :: ProductCategory
+  cproductName          :: Text
+, cproductCategory      :: ProductCategory
 , cproductPatination    :: Maybe Patination
 , cproductAuthors       :: Set AuthorInfo
 , cproductIncrustations :: Set Incrustation
@@ -28,7 +29,8 @@ data ProductCreate = ProductCreate {
 deriveJSON defaultOptions ''ProductCreate
 
 data ProductPatch = ProductPatch {
-  pproductCategory      :: ProductCategory
+  pproductName          :: Text
+, pproductCategory      :: ProductCategory
 , pproductPatination    :: Maybe Patination
 , pproductAuthors       :: Set AuthorInfo
 , pproductIncrustations :: Set Incrustation
