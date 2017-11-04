@@ -6,5 +6,5 @@ import Reflex
 import Reflex.Dom
 
 -- | Main widget of CMS
-cmsFrontend :: MonadWidget m => m ()
+cmsFrontend :: MonadWidget t m => m ()
 cmsFrontend = pure ()
