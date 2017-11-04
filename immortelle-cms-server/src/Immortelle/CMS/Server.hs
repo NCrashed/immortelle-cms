@@ -55,8 +55,8 @@ productGet i tok = do
 lookupProduct :: ProductId -> ServerM Product
 lookupProduct i = notFound =<< runQuery (GetProduct i)
 
-loadAuthor :: AuthorInfo -> ServerM Author
-loadAuthor ai = case ai of
+loadAuthor :: (AuthorInfo, Double) -> ServerM (Author, Double)
+loadAuthor (ai, v) = (, v) <$> case ai of
   KnownAuthor code -> notFound =<< runQuery (GetAuthorByCode code)
   UnknownAuthor name -> pure $ Author name AuthorOther
 
@@ -72,6 +72,11 @@ productPost ProductCreate{..} tok = do
     , productPatination = cproductPatination
     , productAuthors = S.fromList authors
     , productIncrustations = cproductIncrustations
+    , productPrice = cproductPrice
+    , productTimestamp = cproductTimestamp
+    , productLocation = cproductLocation
+    , productBooked = cproductBooked
+    , productInGroup = cproductInGroup
     }
   pure i
 
@@ -81,11 +86,16 @@ productPut i ProductPatch{..} tok = do
   p <- lookupProduct i
   authors <- traverse loadAuthor $ S.toList pproductAuthors
   runUpdate $ InsertProduct p {
-      productName = pproductName 
+      productName = pproductName
     , productCategory = pproductCategory
     , productPatination = pproductPatination
     , productAuthors = S.fromList authors
     , productIncrustations = pproductIncrustations
+    , productPrice = pproductPrice
+    , productTimestamp = pproductTimestamp
+    , productLocation = pproductLocation
+    , productBooked = pproductBooked
+    , productInGroup = pproductInGroup
     }
 
 productDelete :: ProductId -> MToken' '["product-edit"] -> ServerM ()

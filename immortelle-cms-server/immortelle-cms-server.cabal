@@ -56,6 +56,7 @@ library
     RecursiveDo
     ScopedTypeVariables
     TemplateHaskell
+    TupleSections
     TypeFamilies
     TypeOperators
     TypeSynonymInstances

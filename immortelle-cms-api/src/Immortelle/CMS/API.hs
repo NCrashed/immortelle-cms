@@ -8,6 +8,7 @@ module Immortelle.CMS.API(
 
 import Data.Set (Set)
 import Data.Text (Text)
+import Data.Time
 import GHC.Generics
 import Immortelle.CMS.Aeson
 import Immortelle.CMS.Pagination
@@ -21,19 +22,29 @@ deriveJSON defaultOptions ''AuthorInfo
 
 data ProductCreate = ProductCreate {
   cproductName          :: Text
-, cproductCategory      :: ProductCategory
+, cproductCategory      :: ProductCategoryData
 , cproductPatination    :: Maybe Patination
-, cproductAuthors       :: Set AuthorInfo
+, cproductAuthors       :: Set (AuthorInfo, Double)
 , cproductIncrustations :: Set Incrustation
+, cproductPrice         :: Price
+, cproductTimestamp     :: UTCTime
+, cproductLocation      :: Maybe Text
+, cproductBooked        :: Maybe Text
+, cproductInGroup       :: Bool
 } deriving (Generic)
 deriveJSON defaultOptions ''ProductCreate
 
 data ProductPatch = ProductPatch {
   pproductName          :: Text
-, pproductCategory      :: ProductCategory
+, pproductCategory      :: ProductCategoryData
 , pproductPatination    :: Maybe Patination
-, pproductAuthors       :: Set AuthorInfo
+, pproductAuthors       :: Set (AuthorInfo, Double)
 , pproductIncrustations :: Set Incrustation
+, pproductPrice         :: Price
+, pproductTimestamp     :: UTCTime
+, pproductLocation      :: Maybe Text
+, pproductBooked        :: Maybe Text
+, pproductInGroup       :: Bool
 } deriving (Generic)
 deriveJSON defaultOptions ''ProductPatch
 

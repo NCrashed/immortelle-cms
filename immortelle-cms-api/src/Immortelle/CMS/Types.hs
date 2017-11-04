@@ -3,6 +3,8 @@ module Immortelle.CMS.Types(
   , HairType(..)
   , BroochType(..)
   , ProductCategory(..)
+  , ProductCategoryData(..)
+  , productCategoryFromData
   , AuthorCode(..)
   , Author(..)
   , Color(..)
@@ -11,12 +13,15 @@ module Immortelle.CMS.Types(
   , Incrustation(..)
   , ProductId(..)
   , VendorCode(..)
+  , Price(..)
   , Product(..)
   ) where
 
+import Data.Map.Strict (Map)
 import Data.SafeCopy
 import Data.Set (Set)
 import Data.Text (Text)
+import Data.Time
 import GHC.Generics
 import Immortelle.CMS.Aeson
 import Web.HttpApiData
@@ -56,6 +61,65 @@ data ProductCategory =
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''ProductCategory
 deriveJSON defaultOptions ''ProductCategory
+
+-- | Category with data
+data ProductCategoryData =
+    PendantLeafData {
+      pendantLeafWidth  :: Maybe Double
+    , pendantLeafHeight :: Maybe Double
+    }
+  | PendantOtherData {
+      pendantOtherWidth  :: Maybe Double
+    , pendantOtherHeight :: Maybe Double
+    }
+  | NecklaceData {
+      necklaceWidth  :: Maybe Double
+    , necklaceHeight :: Maybe Double
+    }
+  | EaringsData {
+      earingsWidth  :: Maybe Double
+    , earingsHeight :: Maybe Double
+    }
+  | BraceletData {
+      braceletSubType :: BraceletType
+    , braceletSize :: Maybe (Int, Int)
+    }
+  | RingData {
+      ringSize :: Maybe Int
+    }
+  | HairData {
+      hairSubType  :: HairType
+    , hairWidth    :: Maybe Double
+    , hairHeight   :: Maybe Double
+    , hairWoodType :: Maybe Text
+    }
+  | BroochData {
+      broochSubType :: BroochType
+    , broochWidth   :: Maybe Double
+    , broochHeight  :: Maybe Double
+    }
+  | BookmarkData {
+      bookmarkWidth   :: Maybe Double
+    , bookmarkHeight  :: Maybe Double
+    }
+  | GrandData
+  deriving (Eq, Ord, Show, Read, Generic)
+deriveSafeCopy 0 'base ''ProductCategoryData
+deriveJSON defaultOptions ''ProductCategoryData
+
+-- | Extract category tag from extenden data
+productCategoryFromData :: ProductCategoryData -> ProductCategory
+productCategoryFromData v = case v of
+  PendantLeafData{..} -> PendantLeaf
+  PendantOtherData{..} -> PendantOther
+  NecklaceData{..} -> Necklace
+  EaringsData{..} -> Earings
+  BraceletData{..} -> Bracelet braceletSubType
+  RingData{..} -> Ring
+  HairData{..} -> Hair hairSubType
+  BroochData{..} -> Brooch broochSubType
+  BookmarkData{..} -> Bookmark
+  GrandData  -> Grand
 
 -- | Codes of authors in vendoc code
 data AuthorCode =
@@ -141,13 +205,24 @@ data VendorCode = VendorCode {
 deriveSafeCopy 0 'base ''VendorCode
 deriveJSON defaultOptions ''VendorCode
 
+-- | Price in different currencies
+data Price = PriceRub Double
+  deriving (Eq, Ord, Show, Read, Generic)
+deriveSafeCopy 0 'base ''Price
+deriveJSON defaultOptions ''Price
+
 data Product = Product {
   productId            :: ProductId
-, productName          :: Text 
-, productCategory      :: ProductCategory
+, productName          :: Text
+, productCategory      :: ProductCategoryData
 , productPatination    :: Maybe Patination
-, productAuthors       :: Set Author
+, productAuthors       :: Set (Author, Double)
 , productIncrustations :: Set Incrustation
+, productPrice         :: Price
+, productTimestamp     :: UTCTime
+, productLocation      :: Maybe Text
+, productBooked        :: Maybe Text
+, productInGroup       :: Bool
 } deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''Product
 deriveJSON defaultOptions ''Product
@@ -155,8 +230,8 @@ deriveJSON defaultOptions ''Product
 productVendorCode :: Product -> VendorCode
 productVendorCode Product{..} = VendorCode {
     vcodeId = productId
-  , vcodeCategory = productCategory
+  , vcodeCategory = productCategoryFromData productCategory
   , vcodePatination = productPatination
-  , vcodeAuthors = S.map authorCode productAuthors
+  , vcodeAuthors = S.map (authorCode . fst) productAuthors
   , vcodeIncrustations = productIncrustations
   }
