@@ -38,7 +38,6 @@ resolver: lts-9.11
 packages:
 - immortelle-cms-api
 - immortelle-cms-server
-- immortelle-cms-frontend
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)

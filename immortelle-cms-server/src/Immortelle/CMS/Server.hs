@@ -11,15 +11,26 @@ import Immortelle.CMS.API
 import Immortelle.CMS.Config
 import Immortelle.CMS.Monad
 import Immortelle.CMS.Types
+import Network.HTTP.Types.Status (ok200)
 import Network.Wai
 import Servant.API
 import Servant.Server
+import Servant.Utils.StaticFiles (serveDirectoryFileServer)
 
 import qualified Data.Set as S
 
 -- | WAI application for server
 immortelleCmsApp :: Env -> Application
-immortelleCmsApp e = serve (Proxy :: Proxy ImmortelleCmsAPI) $ enter (serverMtoHandler e) immortelleCmsServer
+immortelleCmsApp e = frontendMiddleware servantApp
+  where
+    -- Manual response with frontend blob
+    frontendMiddleware :: Middleware
+    frontendMiddleware oldApp req doResp = case (configFrontendBlob . envConfig $ e, pathInfo req) of
+      (Just (ConfigPath blobPath), "all.js":_) -> doResp $ responseFile ok200 [] blobPath Nothing
+      _ -> oldApp req doResp
+
+    servantApp = serve (Proxy :: Proxy (ImmortelleCmsAPI :<|> Raw)) $ enter (serverMtoHandler e) immortelleCmsServer
+      :<|> serveDirectoryFileServer (unConfigPath . configStatic . envConfig $ e)
 
 -- | Servant API implementation for VPN master
 immortelleCmsServer :: ServerT ImmortelleCmsAPI ServerM

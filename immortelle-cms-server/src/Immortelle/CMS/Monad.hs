@@ -1,5 +1,5 @@
 module Immortelle.CMS.Monad(
-    Env
+    Env(..)
   , newEnv
   , ServerM
   , runServerM

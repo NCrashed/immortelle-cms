@@ -38,7 +38,7 @@ data Config = Config {
   configHost            :: !Text
 , configPort            :: !Int
 , configStatic          :: !ConfigPath
-, configFrontendBlob    :: !ConfigPath
+, configFrontendBlob    :: !(Maybe ConfigPath)
 , configDetailedLogging :: !Bool
 , configState           :: !ConfigPath
 } deriving (Generic, Data)
