@@ -32,6 +32,7 @@ import Servant.API.Auth.Token
 import Servant.Reflex
 
 import Immortelle.CMS.API
+import Immortelle.CMS.Frontend.Monad
 import Immortelle.CMS.Frontend.Utils
 import Immortelle.CMS.Types
 
@@ -118,24 +119,27 @@ transPagedList' :: (Functor m, Reflex t) => m (Event t (ReqResult () (PagedList 
 transPagedList' = fmap . fmap . fmap $ transPagedList
 
 -- | Query server about product by id
-getProduct :: forall t m . MonadWidget t m => Dynamic t SimpleToken -> Event t ProductId -> m (Event t (ReqResult () Product))
-getProduct tokd bodyE = do
+getProduct :: forall t m . MonadFront t m => Event t ProductId -> m (Event t (ReqResult () Product))
+getProduct bodyE = do
+  tokd <- getAuthToken
   bodyD <- holdDyn (Left "") (Right <$> bodyE)
   endpoint bodyD (Right . Token <$> tokd) (void $ updated bodyD)
   where
     endpoint = getProductMethod $ serverEndpoints (Proxy :: Proxy m)
 
 -- | Insert new product on server
-insertProduct :: forall t m . MonadWidget t m => Dynamic t SimpleToken -> Event t ProductCreate -> m (Event t (ReqResult () ProductId))
-insertProduct tokd bodyE = do
+insertProduct :: forall t m . MonadFront t m => Event t ProductCreate -> m (Event t (ReqResult () ProductId))
+insertProduct bodyE = do
+  tokd <- getAuthToken
   bodyD <- holdDyn (Left "") (Right <$> bodyE)
   endpoint bodyD (Right . Token <$> tokd) (void $ updated bodyD)
   where
     endpoint = insertProductMethod $ serverEndpoints (Proxy :: Proxy m)
 
 -- | Update product on server
-updateProduct :: forall t m . MonadWidget t m => Dynamic t SimpleToken -> Event t (ProductId, ProductPatch) -> m (Event t (ReqResult () ()))
-updateProduct tokd bodyE = do
+updateProduct :: forall t m . MonadFront t m => Event t (ProductId, ProductPatch) -> m (Event t (ReqResult () ()))
+updateProduct bodyE = do
+  tokd <- getAuthToken
   bodyD <- holdDyn (Left "") (Right <$> bodyE)
   let pidD = fmap fst <$> bodyD
       pcrD = fmap snd <$> bodyD
@@ -144,8 +148,9 @@ updateProduct tokd bodyE = do
     endpoint = updateProductMethod $ serverEndpoints (Proxy :: Proxy m)
 
 -- | Delete product on server
-deleteProduct :: forall t m . MonadWidget t m => Dynamic t SimpleToken -> Event t ProductId -> m (Event t (ReqResult () ()))
-deleteProduct tokd bodyE = do
+deleteProduct :: forall t m . MonadFront t m => Event t ProductId -> m (Event t (ReqResult () ()))
+deleteProduct bodyE = do
+  tokd <- getAuthToken
   bodyD <- holdDyn (Left "") (Right <$> bodyE)
   endpoint bodyD (Right . Token <$> tokd) (void $ updated bodyD)
   where

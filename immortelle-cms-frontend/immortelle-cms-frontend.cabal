@@ -19,6 +19,7 @@ library
     Immortelle.CMS.Frontend.Auth
     Immortelle.CMS.Frontend.Client
     Immortelle.CMS.Frontend.Menu
+    Immortelle.CMS.Frontend.Monad
     Immortelle.CMS.Frontend.Product
     Immortelle.CMS.Frontend.Utils
   build-depends:
@@ -34,6 +35,7 @@ library
     , ghcjs-dom                 >= 0.2   && < 0.10
     , immortelle-cms-api
     , lens                      >= 4.14  && < 4.16
+    , mtl                       >= 2.2   && < 2.3
     , reflex                    >= 0.5   && < 0.6
     , reflex-dom                >= 0.4   && < 0.5
     , reflex-material-bootstrap >= 0.2   && < 0.3
@@ -45,12 +47,14 @@ library
     , time                      >= 1.6   && < 1.7
   default-language:    Haskell2010
   default-extensions:
+    ConstraintKinds
     DataKinds
     DeriveDataTypeable
     DeriveGeneric
     FlexibleContexts
     FlexibleInstances
     GeneralizedNewtypeDeriving
+    MultiParamTypeClasses
     OverloadedLists
     OverloadedStrings
     RecordWildCards

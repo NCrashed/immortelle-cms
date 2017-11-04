@@ -2,6 +2,7 @@ module Immortelle.CMS.Frontend(
     cmsFrontend
   ) where
 
+import Control.Monad.Reader
 import Data.Proxy
 import Immortelle.CMS.Frontend.Auth
 import Immortelle.CMS.Frontend.Menu
@@ -17,8 +18,8 @@ cmsFrontend = container $ mdo
   logoutE <- switchPromptlyDyn <$> startWithJust (pure never) bodyWidget mtokenD
   pure ()
   where
-  bodyWidget tokenD = menuWidget (Proxy :: Proxy CmsMenu) ProductAddPage [
-      (ProductAddPage, productAddPage tokenD)
+  bodyWidget tokenD = flip runReaderT tokenD $ menuWidget (Proxy :: Proxy CmsMenu) ProductAddPage [
+      (ProductAddPage, productAddPage)
     ]
 
 -- | Make a new dynamic that holds only 'Just' values from original dynamic
