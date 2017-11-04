@@ -27,60 +27,60 @@ encodeVendorCode VendorCode{..} = T.intercalate "-" [
   ]
   where
     encodeCategory c = case c of
-      PendantLeaf   -> "PL"
-      PendantOther  -> "PO"
-      Necklace      -> "N"
-      Earings       -> "E"
-      Bracelet bt   -> "B" <> case bt of
-        BraceletNet   -> "N"
-        BraceletLace  -> "LC"
-        BraceletLeaf  -> "LF"
-      Ring          -> "R"
-      Hair ht       -> "H" <> case ht of
-        HairPinWood    -> "PW"
-        HairPinCopper  -> "PC"
-        Crest          -> "C"
-        Barrette       -> "B"
-      Brooch bt     -> "BR" <> case bt of
-        BroochUsual   -> "U"
-        HatPin        -> "H"
-        Fibula        -> "F"
-      Bookmark      -> "BO"
-      Grand         -> "G"
+      PendantLeaf   -> "КУЛЛ"
+      PendantOther  -> "КУЛД"
+      Necklace      -> "КОЛЬ"
+      Earings       -> "СЕР"
+      Bracelet bt   -> "БРАС" <> case bt of
+        BraceletNet   -> "С"
+        BraceletLace  -> "КР"
+        BraceletLeaf  -> "Л"
+      Ring          -> "КОЛЦ"
+      Hair ht       -> "ВОЛ" <> case ht of
+        HairPinWood    -> "ШПД"
+        HairPinCopper  -> "ШПМ"
+        Crest          -> "ГР"
+        Barrette       -> "ЗАК"
+      Brooch bt     -> "БРОШ" <> case bt of
+        BroochUsual   -> "ОБ"
+        HatPin        -> "БУЛ"
+        Fibula        -> "ФИБ"
+      Bookmark      -> "ЗАКЛ"
+      Grand         -> "ГРАНД"
     encodeColor c = case c of
-      Red       -> "R"
-      Orange    -> "O"
-      Yellow    -> "Y"
-      Green     -> "G"
-      LightBlue -> "LB"
-      Blue      -> "B"
-      Magenta   -> "M"
-    encodePatination Nothing = "Z"
+      Red       -> "К"
+      Orange    -> "О"
+      Yellow    -> "Ж"
+      Green     -> "З"
+      LightBlue -> "Г"
+      Blue      -> "С"
+      Magenta   -> "Ф"
+    encodePatination Nothing = "Н"
     encodePatination (Just p) = case p of
-      PatinationRainbow cls   -> "R" <> foldMap encodeColor cls
-      PatinationAmmonia       -> "A"
-      PatinationAmmoniaBlue   -> "AB"
-      PatinationSulfur        -> "S"
-      PatinationGreen         -> "G"
-      StainedGlassPaint cls   -> "SG" <> foldMap encodeColor cls
+      PatinationRainbow cls   -> "РАД" <> foldMap encodeColor cls
+      PatinationAmmonia       -> "А"
+      PatinationAmmoniaBlue   -> "АГ"
+      PatinationSulfur        -> "С"
+      PatinationGreen         -> "З"
+      StainedGlassPaint cls   -> "ВКР" <> foldMap encodeColor cls
     encodeAuthor c = case c of
-      AuthorOlga   -> "OLG"
-      AuthorSveta  -> "SVE"
-      AuthorPolina -> "POL"
-      AuthorOther  -> "OTH"
+      AuthorOlga   -> "ШЕФ"
+      AuthorSveta  -> "СВТ"
+      AuthorPolina -> "ПОЛ"
+      AuthorOther  -> "ДРУГ"
     encodeAuthors xs
-      | S.null xs = "Z"
+      | S.null xs = "Н"
       | otherwise = T.intercalate ":" . fmap encodeAuthor . toList $ xs
     encodeStone s = case s of
-      Labrador -> "LABR"
-      Amethyst -> "AMET"
+      Labrador -> "ЛАБР"
+      Amethyst -> "АМЕТ"
     encodeIncr i = case i of
-      IncrustationGlass cls  -> "G" <> foldMap encodeColor cls
-      IncrustationStore stns -> "S"<> foldMap encodeStone stns
-      IncrustationPearl      -> "PER"
-      IncrustationOther      -> "OTH"
+      IncrustationGlass cls  -> "С" <> foldMap encodeColor cls
+      IncrustationStore stns -> "К" <> foldMap encodeStone stns
+      IncrustationPearl      -> "ЖЕМ"
+      IncrustationOther      -> "ДРУГ"
     encodeIncrs xs
-      | S.null xs = "Z"
+      | S.null xs = "Н"
       | otherwise = T.intercalate ":" . fmap encodeIncr . toList $ xs
     encodeId = T.pack . show
 
@@ -93,63 +93,63 @@ vendorCode :: Parser VendorCode
 vendorCode = do
   vcodeCategory <- category
   _ <- char '-'
-  vcodePatination <- (char 'Z' *> pure Nothing) <|> fmap Just patination
+  vcodePatination <- (char 'Н' *> pure Nothing) <|> fmap Just patination
   _ <- char '-'
-  vcodeIncrustations <- (char 'Z' *> pure S.empty) <|> (S.fromList <$> sepBy incrustation (char ':'))
+  vcodeIncrustations <- (char 'Н' *> pure S.empty) <|> (S.fromList <$> sepBy incrustation (char ':'))
   _ <- char '-'
-  vcodeAuthors <- (char 'Z' *> pure S.empty) <|> (S.fromList <$> sepBy author (char ':'))
+  vcodeAuthors <- (char 'Н' *> pure S.empty) <|> (S.fromList <$> sepBy author (char ':'))
   _ <- char '-'
   vcodeId <- identifier
   pure VendorCode{..}
   where
     -- Hand written L(1) prefix parser
     category = label "category" $
-          try (string "PL" *> pure PendantLeaf)
-      <|> try (string "PO" *> pure PendantOther)
-      <|> try (string "N" *> pure Necklace)
-      <|> try (string "E" *> pure Earings)
+          try (string "КУЛЛ" *> pure PendantLeaf)
+      <|> try (string "КУЛД" *> pure PendantOther)
+      <|> try (string "КОЛЬ" *> pure Necklace)
+      <|> try (string "СЕР" *> pure Earings)
       <|> fmap Bracelet (
-              try (string "BN" *> pure BraceletNet)
-          <|> try (string "BLC" *> pure BraceletLace)
-          <|> try (string "BLF" *> pure BraceletLeaf) )
-      <|> try (string "R" *> pure Ring)
+              try (string "БРАСС" *> pure BraceletNet)
+          <|> try (string "БРАСКР" *> pure BraceletLace)
+          <|> try (string "БРАСЛ" *> pure BraceletLeaf) )
+      <|> try (string "КОЛЦ" *> pure Ring)
       <|> fmap Hair (
-              try (string "HPW" *> pure HairPinWood)
-          <|> try (string "HPC" *> pure HairPinCopper)
-          <|> try (string "HC" *> pure Crest)
-          <|> try (string "HB" *> pure Barrette) )
+              try (string "ВОЛШПД" *> pure HairPinWood)
+          <|> try (string "ВОЛШПМ" *> pure HairPinCopper)
+          <|> try (string "ВОЛГР" *> pure Crest)
+          <|> try (string "ВОЛЗАК" *> pure Barrette) )
       <|> fmap Brooch (
-            try (string "BRU" *> pure BroochUsual)
-        <|> try (string "BRH" *> pure HatPin)
-        <|> try (string "BRF" *> pure Fibula) )
-      <|> try (string "BO" *> pure Bookmark)
-      <|> try (string "G" *> pure Grand)
+            try (string "БРОШОБ" *> pure BroochUsual)
+        <|> try (string "БРОШБУЛ" *> pure HatPin)
+        <|> try (string "БРОШФИБ" *> pure Fibula) )
+      <|> try (string "ЗАКЛ" *> pure Bookmark)
+      <|> try (string "ГРАНД" *> pure Grand)
     color = label "color" $
-          (char 'R' *> pure Red)
-      <|> (char 'O' *> pure Orange)
-      <|> (char 'Y' *> pure Yellow)
-      <|> (char 'G' *> pure Green)
-      <|> (string "LB" *> pure LightBlue)
-      <|> (char 'B' *> pure Blue)
-      <|> (char 'M' *> pure Magenta)
+          (char 'К' *> pure Red)
+      <|> (char 'О' *> pure Orange)
+      <|> (char 'Ж' *> pure Yellow)
+      <|> (char 'З' *> pure Green)
+      <|> (char 'Г' *> pure LightBlue)
+      <|> (char 'С' *> pure Blue)
+      <|> (char 'Ф' *> pure Magenta)
     patination = label "patination" $
-          try (char 'R' *> fmap (PatinationRainbow . S.fromList) (many color))
-      <|> try (string "AB" *> pure PatinationAmmoniaBlue)
-      <|> try (char 'A' *> pure PatinationAmmonia)
-      <|> try (string "SG" *> fmap (StainedGlassPaint . S.fromList) (many color))
-      <|> try (char 'S' *> pure PatinationSulfur)
-      <|> try (char 'G' *> pure PatinationGreen)
+          try (string "РАД" *> fmap (PatinationRainbow . S.fromList) (many color))
+      <|> try (string "АГ" *> pure PatinationAmmoniaBlue)
+      <|> try (string "А" *> pure PatinationAmmonia)
+      <|> try (string "ВКР" *> fmap (StainedGlassPaint . S.fromList) (many color))
+      <|> try (char 'С' *> pure PatinationSulfur)
+      <|> try (char 'З' *> pure PatinationGreen)
     stone = label "stone" $
-          (string "LABR" *> pure Labrador)
-      <|> (string "AMET" *> pure Amethyst)
+          (string "ЛАБР" *> pure Labrador)
+      <|> (string "АМЕТ" *> pure Amethyst)
     incrustation = label "incrustation" $
-          (char 'G' *> fmap (IncrustationGlass . S.fromList) (many color))
-      <|> (char 'S' *> fmap (IncrustationStore . S.fromList) (many stone))
-      <|> (string "PER" *> pure IncrustationPearl)
-      <|> (string "OTH" *> pure IncrustationOther)
+          (char 'С' *> fmap (IncrustationGlass . S.fromList) (many color))
+      <|> (char 'К' *> fmap (IncrustationStore . S.fromList) (many stone))
+      <|> (string "ЖЕМ" *> pure IncrustationPearl)
+      <|> (string "ДРУГ" *> pure IncrustationOther)
     author = label "author" $
-          try (string "OLG" *> pure AuthorOlga)
-      <|> (string "SVE" *> pure AuthorSveta)
-      <|> (string "POL" *> pure AuthorPolina)
-      <|> (string "OTH" *> pure AuthorOther)
+          try (string "ШЕФ" *> pure AuthorOlga)
+      <|> (string "СВТ" *> pure AuthorSveta)
+      <|> (string "ПОЛ" *> pure AuthorPolina)
+      <|> (string "ДРУГ" *> pure AuthorOther)
     identifier = label "id" $ fmap fromIntegral integer

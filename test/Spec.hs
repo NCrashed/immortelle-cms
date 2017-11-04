@@ -9,6 +9,7 @@ import Test.Tasty.SmallCheck as SC
 import Data.List
 import Data.Ord
 import Data.Set (Set, fromList)
+import Data.Text (unpack)
 
 import Immortelle.CMS
 
@@ -69,7 +70,7 @@ properties :: TestTree
 properties = testGroup "Properties" [scProps, qcProps]
 
 vendorEncodeDecode :: VendorCode -> Bool
-vendorEncodeDecode vc = decodeVendorCode (encodeVendorCode vc) == Right vc
+vendorEncodeDecode vc = trace (unpack $ encodeVendorCode vc) $ decodeVendorCode (encodeVendorCode vc) == Right vc
 
 scProps = adjustOption (const $ SmallCheckDepth 3) $ testGroup "(checked by SmallCheck)"
   [ SC.testProperty "decodeVendorCode . encodeVendorCode == Right" vendorEncodeDecode
