@@ -1,9 +1,11 @@
 module Immortelle.CMS.State(
     DB(..)
+  , emptyDB
   , GenProductId(..)
   , InsertProduct(..)
   , GetProduct(..)
   , DeleteProduct(..)
+  , GetAuthorByCode(..)
   ) where
 
 import Control.Monad.Reader
@@ -46,9 +48,17 @@ deleteProduct i = modify' $ \db -> db {
     dbProducts = M.delete i . dbProducts $ db
   }
 
+getAuthorByCode :: AuthorCode -> Query DB (Maybe Author)
+getAuthorByCode ac = pure $ case ac of
+  AuthorOlga -> Just $ Author "Шеффер" AuthorOlga
+  AuthorSveta -> Just $ Author "Света" AuthorSveta
+  AuthorPolina -> Just $ Author "Полина" AuthorPolina
+  AuthorOther -> Nothing
+
 makeAcidic ''DB [
     'genProductId
   , 'insertProduct
   , 'getProduct
   , 'deleteProduct
+  , 'getAuthorByCode
   ]

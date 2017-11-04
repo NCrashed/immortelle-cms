@@ -1,5 +1,7 @@
 module Immortelle.CMS.Config(
     Config(..)
+  , ConfigPath(..)
+  , absolutize
   , loadConfig
   ) where
 
@@ -38,6 +40,7 @@ data Config = Config {
 , configStatic          :: !ConfigPath
 , configFrontendBlob    :: !ConfigPath
 , configDetailedLogging :: !Bool
+, configState           :: !ConfigPath
 } deriving (Generic, Data)
 deriveJSON defaultOptions ''Config
 

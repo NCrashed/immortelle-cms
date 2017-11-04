@@ -3,3 +3,4 @@ port: 8080
 static: ./static
 frontendBlob: ./static/all.js
 detailedLogging: true
+state: ./db

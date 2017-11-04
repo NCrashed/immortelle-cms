@@ -1,19 +1,25 @@
 module Immortelle.CMS.API(
     ImmortelleCmsAPI
+  , AuthorInfo(..)
   , ProductCreate(..)
   , ProductPatch(..)
   ) where
 
 import Data.Set (Set)
+import Data.Text (Text)
 import GHC.Generics
 import Immortelle.CMS.Aeson
 import Immortelle.CMS.Types
 import Servant.API
 
+data AuthorInfo = KnownAuthor AuthorCode | UnknownAuthor Text
+  deriving (Eq, Ord, Generic)
+deriveJSON defaultOptions ''AuthorInfo
+
 data ProductCreate = ProductCreate {
   cproductCategory      :: ProductCategory
 , cproductPatination    :: Maybe Patination
-, cproductAuthors       :: Set AuthorCode
+, cproductAuthors       :: Set AuthorInfo
 , cproductIncrustations :: Set Incrustation
 } deriving (Generic)
 deriveJSON defaultOptions ''ProductCreate
@@ -21,7 +27,7 @@ deriveJSON defaultOptions ''ProductCreate
 data ProductPatch = ProductPatch {
   pproductCategory      :: ProductCategory
 , pproductPatination    :: Maybe Patination
-, pproductAuthors       :: Set AuthorCode
+, pproductAuthors       :: Set AuthorInfo
 , pproductIncrustations :: Set Incrustation
 } deriving (Generic)
 deriveJSON defaultOptions ''ProductPatch
