@@ -36,11 +36,14 @@ resolver: lts-9.11
 # non-dependency (i.e. a user package), and its test suites and benchmarks
 # will not be run. This is useful for tweaking upstream packages.
 packages:
-- .
+- immortelle-cms-api 
+- immortelle-cms-server
+
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
   - acid-state-0.14.3
+  - containers-0.5.10.2
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

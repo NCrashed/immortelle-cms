@@ -11,7 +11,8 @@ import Data.Ord
 import Data.Set (Set, fromList)
 import Data.Text (unpack)
 
-import Immortelle.CMS
+import Immortelle.CMS.Types
+import Immortelle.CMS.VendorCode
 
 import Debug.Trace
 
@@ -27,6 +28,7 @@ instance Monad m => Serial m Color
 instance Monad m => Serial m Patination
 instance Monad m => Serial m Stone
 instance Monad m => Serial m Incrustation
+instance Monad m => Serial m ProductId
 instance Monad m => Serial m VendorCode
 
 instance ToADTArbitrary BraceletType
@@ -38,6 +40,7 @@ instance ToADTArbitrary Color
 instance ToADTArbitrary Patination
 instance ToADTArbitrary Stone
 instance ToADTArbitrary Incrustation
+instance ToADTArbitrary ProductId
 instance ToADTArbitrary VendorCode
 
 instance Arbitrary BraceletType where
@@ -57,6 +60,8 @@ instance Arbitrary Patination where
 instance Arbitrary Stone where
   arbitrary = genericArbitrary
 instance Arbitrary Incrustation where
+  arbitrary = genericArbitrary
+instance Arbitrary ProductId where
   arbitrary = genericArbitrary
 instance Arbitrary VendorCode where
   arbitrary = genericArbitrary

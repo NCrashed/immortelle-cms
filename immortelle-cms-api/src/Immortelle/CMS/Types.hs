@@ -9,14 +9,17 @@ module Immortelle.CMS.Types(
   , Patination(..)
   , Stone(..)
   , Incrustation(..)
+  , ProductId(..)
   , VendorCode(..)
+  , Product(..)
   ) where
 
-import Data.Acid
 import Data.SafeCopy
 import Data.Set (Set)
 import Data.Text (Text)
 import GHC.Generics
+import Immortelle.CMS.Aeson
+import Web.HttpApiData
 
 import qualified Data.Set as S
 
@@ -24,16 +27,19 @@ import qualified Data.Set as S
 data BraceletType = BraceletNet | BraceletLace | BraceletLeaf
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''BraceletType
+deriveJSON defaultOptions ''BraceletType
 
 -- | Kind of product that is weared in hair
 data HairType = HairPinWood | HairPinCopper | Crest | Barrette
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''HairType
+deriveJSON defaultOptions ''HairType
 
 -- | Kinds of brooch
 data BroochType = BroochUsual | HatPin | Fibula
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''BroochType
+deriveJSON defaultOptions ''BroochType
 
 -- | Category of product
 data ProductCategory =
@@ -49,6 +55,7 @@ data ProductCategory =
   | Grand
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''ProductCategory
+deriveJSON defaultOptions ''ProductCategory
 
 -- | Codes of authors in vendoc code
 data AuthorCode =
@@ -58,6 +65,7 @@ data AuthorCode =
   | AuthorOther
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''AuthorCode
+deriveJSON defaultOptions ''AuthorCode
 
 -- | Author of product
 data Author = Author {
@@ -65,6 +73,7 @@ data Author = Author {
 , authorCode :: AuthorCode
 } deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''Author
+deriveJSON defaultOptions ''Author
 
 -- TODO: add more
 data Color =
@@ -77,6 +86,7 @@ data Color =
   | Magenta
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''Color
+deriveJSON defaultOptions ''Color
 
 -- | Kinds of patination post process
 data Patination =
@@ -88,6 +98,7 @@ data Patination =
   | StainedGlassPaint (Set Color)
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''Patination
+deriveJSON defaultOptions ''Patination
 
 -- | Kinds of stones
 data Stone =
@@ -95,6 +106,7 @@ data Stone =
   | Amethyst
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''Stone
+deriveJSON defaultOptions ''Stone
 
 -- | Insertions
 data Incrustation =
@@ -104,25 +116,37 @@ data Incrustation =
   | IncrustationOther
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''Incrustation
+deriveJSON defaultOptions ''Incrustation
+
+-- | Unique id of product
+newtype ProductId = ProductId { unProductId :: Word }
+  deriving (Eq, Ord, Show, Read, Generic)
+deriveSafeCopy 0 'base ''ProductId
+deriveJSON defaultNewtypeOptions ''ProductId
+
+instance FromHttpApiData ProductId where
+  parseUrlPiece = fmap ProductId . parseUrlPiece
 
 -- | User friendly display of product id and properties (артикул)
 data VendorCode = VendorCode {
-  vcodeId            :: Word
+  vcodeId            :: ProductId
 , vcodeCategory      :: ProductCategory
 , vcodePatination    :: Maybe Patination
 , vcodeAuthors       :: Set AuthorCode
 , vcodeIncrustations :: Set Incrustation
 } deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''VendorCode
+deriveJSON defaultOptions ''VendorCode
 
 data Product = Product {
-  productId            :: Word
+  productId            :: ProductId
 , productCategory      :: ProductCategory
 , productPatination    :: Maybe Patination
 , productAuthors       :: Set Author
 , productIncrustations :: Set Incrustation
 } deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''Product
+deriveJSON defaultOptions ''Product
 
 productVendorCode :: Product -> VendorCode
 productVendorCode Product{..} = VendorCode {

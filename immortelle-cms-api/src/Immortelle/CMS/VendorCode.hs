@@ -82,7 +82,7 @@ encodeVendorCode VendorCode{..} = T.intercalate "-" [
     encodeIncrs xs
       | S.null xs = "Н"
       | otherwise = T.intercalate ":" . fmap encodeIncr . toList $ xs
-    encodeId = T.pack . show
+    encodeId = T.pack . show . unProductId
 
 -- | Decode vendor code from string
 decodeVendorCode :: Text -> Either Text VendorCode
@@ -152,4 +152,4 @@ vendorCode = do
       <|> (string "СВТ" *> pure AuthorSveta)
       <|> (string "ПОЛ" *> pure AuthorPolina)
       <|> (string "ДРУГ" *> pure AuthorOther)
-    identifier = label "id" $ fmap fromIntegral integer
+    identifier = label "id" $ fmap (ProductId . fromIntegral) integer

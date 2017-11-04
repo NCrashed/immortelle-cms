@@ -1,0 +1,113 @@
+name:                immortelle-cms-server
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/ncrashed/immortelle-cms#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Anton Gushcha
+maintainer:          ncrashed@gmail.com
+copyright:           2017 Anton Gushcha
+category:            Game
+build-type:          Simple
+cabal-version:       >=1.10
+
+library
+  hs-source-dirs:      src
+  exposed-modules:
+    Immortelle.CMS
+    Immortelle.CMS.Config
+    Immortelle.CMS.Monad
+    Immortelle.CMS.Server
+    Immortelle.CMS.State
+  build-depends:
+      base                >= 4.7    && < 5
+    , acid-state          >= 0.14   && < 0.15
+    , aeson               >= 0.11   && < 1.5
+    , containers          >= 0.5.10 && < 0.6
+    , directory           >= 1.3    && < 1.4
+    , filepath            >= 1.4    && < 1.5
+    , immortelle-cms-api
+    , megaparsec          >= 5.3    && < 5.4
+    , monad-logger        >= 0.3    && < 0.4
+    , mtl                 >= 2.2    && < 2.3
+    , safecopy            >= 0.9    && < 0.10
+    , servant             >= 0.11   && < 0.12
+    , servant-server      >= 0.11   && < 0.12
+    , text                >= 1.2    && < 1.3
+    , uniplate            >= 1.6    && < 1.7
+    , wai                 >= 3.2    && < 3.3
+    , yaml                >= 0.8    && < 0.9
+  default-language:    Haskell2010
+  default-extensions:
+    DataKinds
+    DeriveDataTypeable
+    DeriveGeneric
+    FlexibleInstances
+    GeneralizedNewtypeDeriving
+    OverloadedStrings
+    RecordWildCards
+    RecursiveDo
+    ScopedTypeVariables
+    TemplateHaskell
+    TypeFamilies
+    TypeOperators
+    TypeSynonymInstances
+    UndecidableInstances
+
+executable immortelle-cms
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base
+    , immortelle-cms-api
+    , immortelle-cms-server
+    , optparse-applicative
+    , text
+    , wai
+    , wai-extra
+    , warp
+  default-language:    Haskell2010
+  default-extensions:
+    DataKinds
+    DeriveDataTypeable
+    DeriveGeneric
+    FlexibleInstances
+    GeneralizedNewtypeDeriving
+    OverloadedStrings
+    RecordWildCards
+    RecursiveDo
+    ScopedTypeVariables
+    TemplateHaskell
+    TypeFamilies
+    TypeOperators
+    TypeSynonymInstances
+    UndecidableInstances
+
+test-suite immortelle-cms-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  build-depends:
+      base
+    , containers
+    , immortelle-cms-server
+    , QuickCheck
+    , quickcheck-arbitrary-adt
+    , smallcheck
+    , smallcheck-series
+    , tasty
+    , tasty-hunit
+    , tasty-quickcheck
+    , tasty-smallcheck
+    , text
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+  default-extensions:
+    FlexibleInstances
+    MultiParamTypeClasses
+
+source-repository head
+  type:     git
+  location: https://github.com/ncrashed/immortelle-cms
