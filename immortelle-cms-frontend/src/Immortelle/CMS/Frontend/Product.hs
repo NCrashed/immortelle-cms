@@ -2,11 +2,13 @@ module Immortelle.CMS.Frontend.Product(
     productAddPage
   ) where
 
+import Control.Lens
 import Control.Monad (join)
 import Data.List (sortBy)
 import Data.Map.Strict (Map)
 import Data.Monoid ((<>))
 import Data.Ord
+import Data.Set (Set)
 import Data.Text (Text, pack)
 import Immortelle.CMS.API
 import Immortelle.CMS.Frontend.Auth
@@ -66,6 +68,23 @@ mdoubleField label = do
     _ -> Nothing
 
 -- | Helper to parse optional double from labeled input field
+doubleField :: forall t m . MonadWidget t m => Text -> Double -> m (Dynamic t Double)
+doubleField label val = do
+  tinput <- formGroupText label $ def & textInputConfig_initialValue .~ showt val
+  let mres = do
+        val <- T.strip <$> _textInput_value tinput
+        pure $ case T.double val of
+          Left er -> Left $ "Число с точкой содержит ошибку! " <> pack er
+          Right (v, left) -> if T.null left then Right v
+            else Left $ "Лишние символы: " <> left
+  widgetHold (pure ()) $ ffor (updated mres) $ \case
+    Left er -> danger er
+    _ -> pure ()
+  holdDyn val $ fforMaybe (updated mres) $ \case
+    Right v -> Just v
+    _ -> Nothing
+
+-- | Helper to parse optional double from labeled input field
 mintField :: forall t m . MonadWidget t m => Text -> m (Dynamic t (Maybe Int))
 mintField label = do
   tinput <- formGroupText label def
@@ -90,6 +109,10 @@ mtextField label = do
     val <- T.strip <$> _textInput_value tinput
     pure $ if T.null val then Nothing else Just val
 
+-- | Helper to parse optional double from labeled input field
+textField :: forall t m . MonadWidget t m => Text -> m (Dynamic t Text)
+textField label = fmap T.strip . _textInput_value <$> formGroupText label def
+
 -- | Displays form that allows to form create request for product
 productCreateForm :: forall t m . MonadFront t m => m (Event t ProductCreate)
 productCreateForm = horizontalForm $ do
@@ -98,6 +121,7 @@ productCreateForm = horizontalForm $ do
    catDatumD <- fmap join $ widgetHoldDyn $ categoryForm <$> catD
    creationD <- dayCalendarField "Дата изготовления" def
    patinationD <- patinationForm
+   authorsD <- authorsForm
    submitE <- submitButton "Создать"
    pure never
 
@@ -221,3 +245,37 @@ patinationForm = do
       PatStainedGlass -> do
         clrs <- fmap S.fromList <$> manyInputs colorField
         pure $ Just . StainedGlassPaint <$> clrs
+
+-- | Names for author tags
+authorTags :: Map AuthorCode Text
+authorTags = [
+    (AuthorOlga, "Шеффер")
+  , (AuthorSveta, "Света")
+  , (AuthorPolina, "Полина")
+  , (AuthorOther, "Другой")
+  ]
+
+-- | Part of form that allows to add authors dynamically
+authorsForm :: forall t m . MonadWidget t m => m (Dynamic t (Set (AuthorInfo, Double)))
+authorsForm = do
+  formGroupLabel "Авторы" $ pure ()
+  fmap S.fromList <$> manyInputs authorForm
+  where
+    authorForm :: m (Dynamic t (AuthorInfo, Double))
+    authorForm = panel $ do
+      authD <- authInfoForm
+      percent <- doubleField "Процент" 100
+      pure $ (,) <$> authD <*> percent
+
+    authInfoForm :: m (Dynamic t AuthorInfo)
+    authInfoForm = do
+      tagD <- _dropdown_value <$> formGroupSelect "Автор" AuthorOlga (pure authorTags) def
+      fmap join $ widgetHoldDyn $ makeForm <$> tagD
+      where
+        makeForm tg = case tg of
+          AuthorOlga -> pure . pure . KnownAuthor $ AuthorOlga
+          AuthorSveta -> pure . pure . KnownAuthor $ AuthorSveta
+          AuthorPolina -> pure . pure . KnownAuthor $ AuthorPolina
+          AuthorOther -> do
+            name <- textField "Имя"
+            pure $ UnknownAuthor <$> name
