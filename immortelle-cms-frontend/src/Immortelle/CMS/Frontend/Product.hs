@@ -122,6 +122,7 @@ productCreateForm = horizontalForm $ do
    creationD <- dayCalendarField "Дата изготовления" def
    patinationD <- patinationForm
    authorsD <- authorsForm
+   incrsD <- incrustationsForm
    submitE <- submitButton "Создать"
    pure never
 
@@ -203,14 +204,31 @@ colorLabels = [
 colorField :: forall t m . MonadWidget t m => m (Dynamic t Color)
 colorField = _dropdown_value <$> formGroupSelect "Цвет" Red (pure colorLabels) def
 
+stoneLabels :: Map Stone Text
+stoneLabels = [
+    (Labrador, "Лабрадор")
+  , (Amethyst, "Аметист")
+  , (Quartz, "Кварц")
+  , (Rauchtopaz, "Раухтопаз")
+  , (Aquamarine, "Аквамарин")
+  , (Rhinestone, "Горный хрусталь")
+  , (Turquoise, "Бирюза")
+  , (Peridot, "Оливин")
+  ]
+
+-- | Select stone from dropdown
+stoneField :: forall t m . MonadWidget t m => m (Dynamic t Stone)
+stoneField = _dropdown_value <$> formGroupSelect "Камень" Quartz (pure stoneLabels) def
+
 -- | Allows to input many values via dynamic count of simple fields
-manyInputs :: forall t m a . MonadWidget t m => m (Dynamic t a) -> m (Dynamic t [a])
-manyInputs makeField = mdo
+manyInputs :: forall t m a . MonadWidget t m => Int -> m (Dynamic t a) -> m (Dynamic t [a])
+manyInputs initialN makeField = mdo
   let makeField' k _ _ = row $ do
         a <- md10 makeField
         delE <- md2 $ primaryButton "Удалить"
         pure (a, delE)
-  tmap :: Dynamic t (Map Int (Dynamic t a, Event t ())) <- listWithKeyShallowDiff [(0, ())] updE makeField'
+      initalMap = M.fromList $ (\i -> (i, ())) <$> [0 .. initialN-1]
+  tmap :: Dynamic t (Map Int (Dynamic t a, Event t ())) <- listWithKeyShallowDiff initalMap updE makeField'
   let valmap = joinDynThroughMap $ fmap fst <$> tmap :: Dynamic t (Map Int a)
       delmap = fmap snd <$> tmap :: Dynamic t (Map Int (Event t ()))
       delmap' = switchPromptlyDyn $ mergeMap <$> delmap :: Event t (Map Int ())
@@ -236,14 +254,14 @@ patinationForm = do
     makeForm tg = case tg of
       NoPatination -> pure $ pure Nothing
       PatRainbow -> do
-        clrs <- fmap S.fromList <$> manyInputs colorField
+        clrs <- fmap S.fromList <$> manyInputs 1 colorField
         pure $ Just . PatinationRainbow <$> clrs
       PatAmmonia -> pure . pure . Just $ PatinationAmmonia
       PatAmmoniaBlue -> pure . pure . Just $ PatinationAmmoniaBlue
       PatSulfur -> pure . pure . Just $ PatinationSulfur
       PatGreen -> pure . pure . Just $ PatinationGreen
       PatStainedGlass -> do
-        clrs <- fmap S.fromList <$> manyInputs colorField
+        clrs <- fmap S.fromList <$> manyInputs 1 colorField
         pure $ Just . StainedGlassPaint <$> clrs
 
 -- | Names for author tags
@@ -259,7 +277,7 @@ authorTags = [
 authorsForm :: forall t m . MonadWidget t m => m (Dynamic t (Set (AuthorInfo, Double)))
 authorsForm = do
   formGroupLabel "Авторы" $ pure ()
-  fmap S.fromList <$> manyInputs authorForm
+  fmap S.fromList <$> manyInputs 1 authorForm
   where
     authorForm :: m (Dynamic t (AuthorInfo, Double))
     authorForm = panel $ do
@@ -279,3 +297,43 @@ authorsForm = do
           AuthorOther -> do
             name <- textField "Имя"
             pure $ UnknownAuthor <$> name
+
+-- | Tags incrustations types
+data IncrustationTag =
+    IncrGlass
+  | IncrStone
+  | IncrPearl
+  | IncrBone
+  | IncrOther
+  deriving (Eq, Ord, Show, Read)
+
+incrustationLabels :: Map IncrustationTag Text
+incrustationLabels = [
+    (IncrGlass, "Стекло")
+  , (IncrStone, "Камень")
+  , (IncrPearl, "Жемчуг")
+  , (IncrBone, "Кость")
+  , (IncrOther, "Другое")
+  ]
+
+-- | Part of form that allows to add incrustations dynamically
+incrustationsForm :: forall t m . MonadWidget t m => m (Dynamic t (Set Incrustation))
+incrustationsForm = do
+  formGroupLabel "Вставки" $ pure ()
+  fmap S.fromList <$> manyInputs 0 incrustationForm
+  where
+    incrustationForm :: m (Dynamic t Incrustation)
+    incrustationForm = panel $ do
+      tagD <- _dropdown_value <$> formGroupSelect "Вставка" IncrGlass (pure incrustationLabels) def
+      fmap join $ widgetHoldDyn $ makeForm <$> tagD
+      where
+        makeForm tg = case tg of
+          IncrGlass -> do
+            clrs <- fmap S.fromList <$> manyInputs 1 colorField
+            pure $ IncrustationGlass <$> clrs
+          IncrStone -> do
+            stns <- fmap S.fromList <$> manyInputs 1 stoneField
+            pure $ IncrustationStone <$> stns
+          IncrPearl -> pure . pure $ IncrustationPearl
+          IncrBone -> pure . pure $ IncrustationBone
+          IncrOther -> pure . pure $ IncrustationOther

@@ -74,10 +74,17 @@ encodeVendorCode VendorCode{..} = T.intercalate "-" [
     encodeStone s = case s of
       Labrador -> "ЛАБР"
       Amethyst -> "АМЕТ"
+      Quartz -> "КВАР"
+      Rauchtopaz -> "ДМКВ"
+      Aquamarine -> "АКВА"
+      Rhinestone -> "ХРУС"
+      Turquoise -> "БИР"
+      Peridot -> "ОЛИВ"
     encodeIncr i = case i of
       IncrustationGlass cls  -> "С" <> foldMap encodeColor cls
-      IncrustationStore stns -> "К" <> foldMap encodeStone stns
+      IncrustationStone stns -> "К" <> foldMap encodeStone stns
       IncrustationPearl      -> "ЖЕМ"
+      IncrustationBone       -> "КОСТ"
       IncrustationOther      -> "ДРУГ"
     encodeIncrs xs
       | S.null xs = "Н"
@@ -142,10 +149,17 @@ vendorCode = do
     stone = label "stone" $
           (string "ЛАБР" *> pure Labrador)
       <|> (string "АМЕТ" *> pure Amethyst)
+      <|> (string "КВАР" *> pure Quartz)
+      <|> (string "ДМКВ" *> pure Rauchtopaz)
+      <|> (string "АКВА" *> pure Aquamarine)
+      <|> (string "ХРУС" *> pure Rhinestone)
+      <|> (string "БИР" *> pure Turquoise)
+      <|> (string "ОЛИВ" *> pure Peridot)
     incrustation = label "incrustation" $
           (char 'С' *> fmap (IncrustationGlass . S.fromList) (many color))
-      <|> (char 'К' *> fmap (IncrustationStore . S.fromList) (many stone))
+      <|> (char 'К' *> fmap (IncrustationStone . S.fromList) (many stone))
       <|> (string "ЖЕМ" *> pure IncrustationPearl)
+      <|> (string "КОСТ" *> pure IncrustationBone)
       <|> (string "ДРУГ" *> pure IncrustationOther)
     author = label "author" $
           try (string "ШЕФ" *> pure AuthorOlga)

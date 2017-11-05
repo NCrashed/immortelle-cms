@@ -169,6 +169,12 @@ deriveJSON defaultOptions ''Patination
 data Stone =
     Labrador
   | Amethyst
+  | Quartz
+  | Rauchtopaz
+  | Aquamarine
+  | Rhinestone
+  | Turquoise
+  | Peridot
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''Stone
 deriveJSON defaultOptions ''Stone
@@ -176,8 +182,9 @@ deriveJSON defaultOptions ''Stone
 -- | Insertions
 data Incrustation =
     IncrustationGlass (Set Color)
-  | IncrustationStore (Set Stone)
+  | IncrustationStone (Set Stone)
   | IncrustationPearl
+  | IncrustationBone
   | IncrustationOther
   deriving (Eq, Ord, Show, Read, Generic)
 deriveSafeCopy 0 'base ''Incrustation
