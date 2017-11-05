@@ -1,0 +1,2 @@
+*.nixops* binary filter=git-crypt diff=git-crypt
+immortelle-cms-server/password binary filter=git-crypt diff=git-crypt

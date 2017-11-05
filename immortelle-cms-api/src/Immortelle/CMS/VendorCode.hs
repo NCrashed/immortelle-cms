@@ -157,9 +157,9 @@ vendorCode = do
       <|> (string "ОЛИВ" *> pure Peridot)
     incrustation = label "incrustation" $
           (char 'С' *> fmap (IncrustationGlass . S.fromList) (many color))
+      <|> (string "КОСТ" *> pure IncrustationBone)
       <|> (char 'К' *> fmap (IncrustationStone . S.fromList) (many stone))
       <|> (string "ЖЕМ" *> pure IncrustationPearl)
-      <|> (string "КОСТ" *> pure IncrustationBone)
       <|> (string "ДРУГ" *> pure IncrustationOther)
     author = label "author" $
           try (string "ШЕФ" *> pure AuthorOlga)
