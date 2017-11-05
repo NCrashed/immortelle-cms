@@ -13,6 +13,7 @@ import Data.Text (Text, pack)
 import Immortelle.CMS.API
 import Immortelle.CMS.Frontend.Auth
 import Immortelle.CMS.Frontend.Calendar
+import Immortelle.CMS.Frontend.Client
 import Immortelle.CMS.Frontend.Menu
 import Immortelle.CMS.Frontend.Monad
 import Immortelle.CMS.Frontend.Utils
@@ -27,8 +28,12 @@ import qualified Data.Text.Read as T
 
 productAddPage :: forall t m . MonadFront t m => m (Event t CmsMenuItem)
 productAddPage = do
-  _ <- productCreateForm
+  prodE <- productCreateForm
+  prodIdE <- dangerResult =<< insertProduct prodE
+  widgetHold (pure ()) $ ffor prodIdE $ \i -> success $ "Новое изделие добавлено под ID: " <> showt i
   pure never
+  where
+    success = elClass "div" "alert alert-success" . text
 
 categoryLabels :: Map ProductCategory Text
 categoryLabels = [
@@ -113,18 +118,40 @@ mtextField label = do
 textField :: forall t m . MonadWidget t m => Text -> m (Dynamic t Text)
 textField label = fmap T.strip . _textInput_value <$> formGroupText label def
 
+-- | Helper for checkboxes
+checkField :: forall t m . MonadWidget t m => Text -> Bool -> m (Dynamic t Bool)
+checkField label val = formGroupLabel label $ divClass "checkbox" $ el "label" $ do
+  res <- _checkbox_value <$> checkbox val def
+  spanClass "checkbox-material" $ spanClass "check" $ pure ()
+  pure res
+
 -- | Displays form that allows to form create request for product
 productCreateForm :: forall t m . MonadFront t m => m (Event t ProductCreate)
 productCreateForm = horizontalForm $ do
    nameD <- _textInput_value <$> formGroupText "Имя изделия" def
    catD <- _dropdown_value <$> formGroupSelect "Категория" PendantLeaf (pure categoryLabels) def
    catDatumD <- fmap join $ widgetHoldDyn $ categoryForm <$> catD
-   creationD <- dayCalendarField "Дата изготовления" def
    patinationD <- patinationForm
    authorsD <- authorsForm
    incrsD <- incrustationsForm
+   priceD <- fmap PriceRub <$> doubleField "Цена" 0 -- TODO: other currencies
+   creationD <- dayCalendarValue <$> dayCalendarField "Дата изготовления" def
+   locD <- mtextField "Место"
+   bookedD <- mtextField "Бронь"
+   groupD <- checkField "Выложен" False
    submitE <- submitButton "Создать"
-   pure never
+   let requestD = ProductCreate
+        <$> nameD
+        <*> catDatumD
+        <*> patinationD
+        <*> authorsD
+        <*> incrsD
+        <*> priceD
+        <*> creationD
+        <*> locD
+        <*> bookedD
+        <*> groupD
+   pure $ tagPromptlyDyn requestD submitE
 
 -- | Given the fixed category display form for setting cattegory specific data
 categoryForm :: forall t m . MonadFront t m => ProductCategory -> m (Dynamic t ProductCategoryData)
