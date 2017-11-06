@@ -2,8 +2,10 @@ module Immortelle.CMS.Frontend.Calendar(
     dayCalendarField
   , DayCalendarConfig(..)
   , DayCalendar(..)
+  , dayCalendarConfig_inititialDay
   ) where
 
+import Control.Lens.TH
 import Control.Monad.IO.Class
 import Data.Default
 import Data.JSString (JSString, pack)
@@ -18,12 +20,15 @@ import Web.Reflex.Bootstrap.Form
 import Web.Reflex.Bootstrap.Markup
 import Web.Reflex.Bootstrap.Utils
 
-data DayCalendarConfig t = DayCalendarConfig {
-
+data DayCalendarConfig = DayCalendarConfig {
+  _dayCalendarConfig_inititialDay :: Maybe Day
 }
+makeLenses ''DayCalendarConfig
 
-instance Reflex t => Default (DayCalendarConfig t) where
-  def = DayCalendarConfig
+instance Default DayCalendarConfig where
+  def = DayCalendarConfig {
+      _dayCalendarConfig_inititialDay = Nothing
+    }
 
 data DayCalendar t = DayCalendar {
   dayCalendarValue :: Dynamic t (Maybe Day)
@@ -35,16 +40,17 @@ makeDatePicker :: MonadIO m => Text -> m ()
 makeDatePicker i = liftIO $ js_makeDatePicker $ pack . T.unpack $ i
 
 -- | Make a text field that is filled with material Bootstrap calendar widget
-dayCalendarField :: forall t m . MonadWidget t m => Text -> DayCalendarConfig t -> m (DayCalendar t)
+dayCalendarField :: forall t m . MonadWidget t m => Text -> DayCalendarConfig -> m (DayCalendar t)
 dayCalendarField label cfg = do
   i <- genId
   let inputId = "day-calendar" <> showt i
+      initText = maybe "" (T.pack . formatTime defaultTimeLocale "YYYY-MM-DD") $ _dayCalendarConfig_inititialDay cfg
   tinput <- formGroup $ do
     mkLabel [ ("for", inputId)
             , ("class", "col-sm-2 control-label")] $ text label
     elClass "div" "col-sm-10" $ textInput TextInputConfig {
         _textInputConfig_inputType = "text"
-      , _textInputConfig_initialValue = ""
+      , _textInputConfig_initialValue = initText
       , _textInputConfig_setValue = never
       , _textInputConfig_attributes = pure [
             ("class", "form-control")

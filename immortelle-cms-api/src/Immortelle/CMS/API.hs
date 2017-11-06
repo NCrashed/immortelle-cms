@@ -17,7 +17,7 @@ import Servant.API
 import Servant.API.Auth.Token
 
 data AuthorInfo = KnownAuthor AuthorCode | UnknownAuthor Text
-  deriving (Eq, Ord, Generic)
+  deriving (Eq, Ord, Show, Generic)
 deriveJSON defaultOptions ''AuthorInfo
 
 data ProductCreate = ProductCreate {
@@ -31,7 +31,7 @@ data ProductCreate = ProductCreate {
 , cproductLocation      :: Maybe Text
 , cproductBooked        :: Maybe Text
 , cproductInGroup       :: Bool
-} deriving (Generic)
+} deriving (Show, Generic)
 deriveJSON defaultOptions ''ProductCreate
 
 data ProductPatch = ProductPatch {
@@ -45,7 +45,7 @@ data ProductPatch = ProductPatch {
 , pproductLocation      :: Maybe Text
 , pproductBooked        :: Maybe Text
 , pproductInGroup       :: Bool
-} deriving (Generic)
+} deriving (Show, Generic)
 deriveJSON defaultOptions ''ProductPatch
 
 type ImmortelleCmsAPI =
