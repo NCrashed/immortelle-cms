@@ -16,6 +16,7 @@ import Immortelle.CMS.Monad
 import Immortelle.CMS.Types
 import Network.HTTP.Types.Status (ok200)
 import Network.Wai
+import Network.Wai.Middleware.Gzip
 import Servant.API
 import Servant.API.Auth.Token
 import Servant.Server
@@ -26,16 +27,18 @@ import qualified Data.Set as S
 
 -- | WAI application for server
 immortelleCmsApp :: Env -> Application
-immortelleCmsApp e = frontendMiddleware servantApp
+immortelleCmsApp e = gzip (def { gzipFiles = GzipCacheFolder . unConfigPath $ configCacheFolder}) . frontendMiddleware $ servantApp
   where
+    Config{..} = envConfig e
+
     -- Manual response with frontend blob
     frontendMiddleware :: Middleware
-    frontendMiddleware oldApp req doResp = case (configFrontendBlob . envConfig $ e, pathInfo req) of
-      (Just (ConfigPath blobPath), "all.js":_) -> doResp $ responseFile ok200 [] blobPath Nothing
+    frontendMiddleware oldApp req doResp = case (configFrontendBlob, pathInfo req) of
+      (Just (ConfigPath blobPath), "all.js":_) -> doResp $ responseFile ok200 [("Content-Type", "application/javascript")] blobPath Nothing
       _ -> oldApp req doResp
 
     servantApp = serve (Proxy :: Proxy (ImmortelleCmsAPI :<|> Raw)) $ enter (serverMtoHandler e) immortelleCmsServer
-      :<|> serveDirectoryFileServer (unConfigPath . configStatic . envConfig $ e)
+      :<|> serveDirectoryFileServer (unConfigPath configStatic)
 
 -- | Servant API implementation for VPN master
 immortelleCmsServer :: ServerT ImmortelleCmsAPI ServerM

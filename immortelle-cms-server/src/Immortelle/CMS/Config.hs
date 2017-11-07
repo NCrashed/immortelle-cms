@@ -42,6 +42,7 @@ data Config = Config {
 , configDetailedLogging :: !Bool
 , configState           :: !ConfigPath
 , configAdminPassword   :: !Text
+, configCacheFolder     :: !ConfigPath
 } deriving (Generic, Data)
 deriveJSON defaultOptions ''Config
 

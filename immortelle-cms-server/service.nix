@@ -34,6 +34,7 @@ in {
           detailedLogging: true
           state: /var/run/immortelle.db
           adminPassword: "${builtins.replaceStrings ["\n"] [""] (builtins.readFile ./password)}"
+          cacheFolder: /var/run/immortelle.cache
         '';
         description = ''
           Configuration file for immortelle-cms-server.
