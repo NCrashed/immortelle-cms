@@ -44,7 +44,7 @@
 				}
 				if(options === 'destroy')
 				{
-					delete $.data(this, pluginDataName);
+					$.removeData(this);
 				}
 			}
 		});
@@ -1069,7 +1069,7 @@
 				{
 				 	this.currentDate.add(12, 'hours');
 				}
-				
+
 				this.showTime(this.currentDate);
 
 				this.animateHands();

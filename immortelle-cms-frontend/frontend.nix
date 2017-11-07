@@ -13,6 +13,24 @@ let
       cd ../..
       '';
   });
+  optimizeCC = drv: pkgs.haskell.lib.overrideCabal drv (drv: {
+    postFixup = ''
+      cd $out/bin/immortelle-cms-frontend.jsexe
+      ${pkgs.closurecompiler}/bin/closure-compiler all.js --compilation_level=ADVANCED_OPTIMIZATIONS \
+        --externs=all.js.externs \
+        --externs=${../immortelle-cms-server/static/bootstrap/js/bootstrap.min.js} \
+        --externs=${../immortelle-cms-server/static/bootstrap/js/material.min.js} \
+        --externs=${../immortelle-cms-server/static/bootstrap/js/ripples.min.js} \
+        --externs=${../immortelle-cms-server/static/bootstrap-material-datetimepicker.js} \
+        --externs=${../immortelle-cms-server/static/jquery-1.9.1.js} \
+        --externs=${../immortelle-cms-server/static/jquery.scrollTo.min.js} \
+        --externs=${../immortelle-cms-server/static/moment-with-locales.js} \
+        --jscomp_off=duplicate \
+        --jscomp_off=undefinedVars \
+        --jscomp_off=externsValidation \
+        > all.min.js
+    '';
+  });
 
   # Filter to exclude garbage from sources of derivations
   filterHaskell = src:
@@ -36,7 +54,7 @@ let
       reflex-material-bootstrap = self.callPackage ../nixdeps/reflex-material-bootstrap.nix {};
       servant-reflex = dontHaddock (dontCheck (self.callPackage ../nixdeps/servant-reflex.nix { }));
       immortelle-cms-api = dontHaddock (dontCheck (self.callCabal2nix "immortelle-cms-api" ../immortelle-cms-api {}));
-      immortelle-cms-frontend = dontHaddock (dontCheck (self.callCabal2nix "immortelle-cms-frontend" ./. {}));
+      immortelle-cms-frontend = optimizeCC (dontHaddock (dontCheck (self.callCabal2nix "immortelle-cms-frontend" ./. {})));
     }
   );
 in packages

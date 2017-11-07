@@ -30,7 +30,7 @@ in {
           host: 127.0.0.1
           port: 80
           static: ${./static}
-          frontendBlob: ${frontend.immortelle-cms-frontend}/bin/immortelle-cms-frontend.jsexe/all.js
+          frontendBlob: ${frontend.immortelle-cms-frontend}/bin/immortelle-cms-frontend.jsexe/all.min.js
           detailedLogging: true
           state: /var/run/immortelle.db
           adminPassword: "${builtins.replaceStrings ["\n"] [""] (builtins.readFile ./password)}"
