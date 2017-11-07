@@ -22,6 +22,7 @@ library
     Immortelle.CMS.Frontend.Menu
     Immortelle.CMS.Frontend.Monad
     Immortelle.CMS.Frontend.Product
+    Immortelle.CMS.Frontend.Scroll
     Immortelle.CMS.Frontend.Utils
   build-depends:
       base                      >= 4.7   && < 5

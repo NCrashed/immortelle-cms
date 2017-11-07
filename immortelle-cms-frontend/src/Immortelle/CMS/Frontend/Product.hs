@@ -17,6 +17,7 @@ import Immortelle.CMS.Frontend.Calendar
 import Immortelle.CMS.Frontend.Client
 import Immortelle.CMS.Frontend.Menu
 import Immortelle.CMS.Frontend.Monad
+import Immortelle.CMS.Frontend.Scroll
 import Immortelle.CMS.Frontend.Utils
 import Immortelle.CMS.Types
 import Reflex.Dom
@@ -32,21 +33,24 @@ productAddPage = do
   _ <- productCreate
   pure never
 
+productCreateFirstField :: Text
+productCreateFirstField = "product-create-first-field"
+
 productCreate :: forall t m . MonadFront t m => m (Event t ProductId )
 productCreate = mdo
+  succDelayedE <- delay 0.3 succE
+  scrolledSuccess 500 $ ffor succE $ \i -> "Новое изделие добавлено под ID: " <> showt i
+  performEvent_ $ ffor succDelayedE $ const $ setFocus productCreateFirstField
   res :: Dynamic t (Event t ProductId, Dynamic t ProductCreate) <- widgetHold (body defaultProductCreate) $ body . resetProductCreate <$> reqE
   let reqD :: Dynamic t ProductCreate = join $ snd <$> res
       succE :: Event t ProductId = switchPromptlyDyn $ fst <$> res
       reqE :: Event t ProductCreate = tagPromptlyDyn reqD succE
-  -- widgetHold (pure ()) $ ffor (updated reqD) $ \val -> success $ showt val
-  widgetHold (pure ()) $ ffor succE $ \i -> success $ "Новое изделие добавлено под ID: " <> showt i
   pure succE
   where
     body v = do
       prodDyn <- holdDyn v =<< productCreateForm v
       prodIdE <- dangerResult =<< insertProduct (updated prodDyn)
       pure (prodIdE, prodDyn)
-    success = elClass "div" "alert alert-success" . text
 
 categoryLabels :: Map ProductCategory Text
 categoryLabels = [
@@ -67,79 +71,6 @@ categoryLabels = [
   , (Brooch Fibula, "Фибула")
   , (Bookmark, "Закладка")
   , (Grand, "Гранд") ]
-
--- | Helper to parse optional double from labeled input field
-mdoubleField :: forall t m . MonadWidget t m => Text -> Maybe Double -> m (Dynamic t (Maybe Double))
-mdoubleField label mt = do
-  let initText = maybe "" showt mt
-  tinput <- formGroupText label $ def & textInputConfig_initialValue .~ initText
-  let mres = do
-        val <- T.strip <$> _textInput_value tinput
-        pure $ if T.null val then Right Nothing else case T.double val of
-          Left er -> Left $ "Число с точкой содержит ошибку! " <> pack er
-          Right (v, left) -> if T.null left then Right . Just $ v
-            else Left $ "Лишние символы: " <> left
-  widgetHold (pure ()) $ ffor (updated mres) $ \case
-    Left er -> danger er
-    _ -> pure ()
-  holdDyn Nothing $ fforMaybe (updated mres) $ \case
-    Right v -> Just v
-    _ -> Nothing
-
--- | Helper to parse optional double from labeled input field
-doubleField :: forall t m . MonadWidget t m => Text -> Double -> m (Dynamic t Double)
-doubleField label val = do
-  tinput <- formGroupText label $ def & textInputConfig_initialValue .~ showt val
-  let mres = do
-        val <- T.strip <$> _textInput_value tinput
-        pure $ case T.double val of
-          Left er -> Left $ "Число с точкой содержит ошибку! " <> pack er
-          Right (v, left) -> if T.null left then Right v
-            else Left $ "Лишние символы: " <> left
-  widgetHold (pure ()) $ ffor (updated mres) $ \case
-    Left er -> danger er
-    _ -> pure ()
-  holdDyn val $ fforMaybe (updated mres) $ \case
-    Right v -> Just v
-    _ -> Nothing
-
--- | Helper to parse optional double from labeled input field
-mintField :: forall t m . MonadWidget t m => Text -> Maybe Int -> m (Dynamic t (Maybe Int))
-mintField label val0 = do
-  let initText = maybe "" showt val0
-  tinput <- formGroupText label $ def & textInputConfig_initialValue .~ initText
-  let mres = do
-        val <- T.strip <$> _textInput_value tinput
-        pure $ if T.null val then Right Nothing else case T.decimal val of
-          Left er -> Left $ "Целое число содержит ошибку! " <> pack er
-          Right (v, left) -> if T.null left then Right . Just $ v
-            else Left $ "Лишние символы: " <> left
-  widgetHold (pure ()) $ ffor (updated mres) $ \case
-    Left er -> danger er
-    _ -> pure ()
-  holdDyn Nothing $ fforMaybe (updated mres) $ \case
-    Right v -> Just v
-    _ -> Nothing
-
--- | Helper to parse optional double from labeled input field
-mtextField :: forall t m . MonadWidget t m => Text -> Maybe Text -> m (Dynamic t (Maybe Text))
-mtextField label val0 = do
-  let initText = fromMaybe "" val0
-  tinput <- formGroupText label $ def & textInputConfig_initialValue .~ initText
-  pure $ do
-    val <- T.strip <$> _textInput_value tinput
-    pure $ if T.null val then Nothing else Just val
-
--- | Helper to parse optional double from labeled input field
-textField :: forall t m . MonadWidget t m => Text -> Text -> m (Dynamic t Text)
-textField label initText = fmap T.strip . _textInput_value <$> formGroupText label (def & textInputConfig_initialValue .~ initText)
-
--- | Helper for checkboxes
-checkField :: forall t m . MonadWidget t m => Text -> Bool -> m (Dynamic t Bool)
-checkField label val = formGroupLabel label $ divClass "checkbox" $ el "label" $ do
-  res <- _checkbox_value <$> checkbox val def
-  spanClass "checkbox-material" $ spanClass "check" $ pure ()
-  pure res
 
 -- | Create request with no data
 defaultProductCreate :: ProductCreate
@@ -167,10 +98,13 @@ resetProductCreate p = p {
   , cproductBooked        = Nothing
   , cproductInGroup       = False
   }
+
 -- | Displays form that allows to form create request for product
 productCreateForm :: forall t m . MonadFront t m => ProductCreate -> m (Event t ProductCreate)
 productCreateForm pc0 = horizontalForm $ do
-   nameD <- _textInput_value <$> formGroupText "Имя изделия" (def & textInputConfig_initialValue .~ cproductName pc0)
+   nameD <- textField' "Имя изделия" (def
+      & textInputConfig_initialValue .~ cproductName pc0
+      & textInputConfig_attributes .~ pure [("id", productCreateFirstField)])
    catD <- _dropdown_value <$> formGroupSelect "Категория" (productCategoryFromData $ cproductCategory pc0) (pure categoryLabels) def
    catDatumD <- fmap join $ widgetHold (categoryFormEdit $ cproductCategory pc0) $ updated $ categoryForm <$> catD
    patinationD <- patinationForm (cproductPatination pc0)
@@ -346,31 +280,6 @@ stoneLabels = [
 -- | Select stone from dropdown
 stoneField :: forall t m . MonadWidget t m => Stone -> m (Dynamic t Stone)
 stoneField v = _dropdown_value <$> formGroupSelect "Камень" v (pure stoneLabels) def
-
--- | Allows to input many values via dynamic count of simple fields
-manyInputs :: forall t m k a . MonadWidget t m => [k] -> (Maybe k -> m (Dynamic t a)) -> m (Dynamic t [a])
-manyInputs initialVals makeField = mdo
-  let makeField' k v _ = row $ do
-        a <- md10 $ makeField v
-        delE <- md2 $ primaryButton "Удалить"
-        pure (a, delE)
-      initalMap = M.fromList $ [0 .. ] `zip` fmap Just initialVals
-  tmap :: Dynamic t (Map Int (Dynamic t a, Event t ())) <- listWithKeyShallowDiff initalMap updE makeField'
-  let valmap = joinDynThroughMap $ fmap fst <$> tmap :: Dynamic t (Map Int a)
-      delmap = fmap snd <$> tmap :: Dynamic t (Map Int (Event t ()))
-      delmap' = switchPromptlyDyn $ mergeMap <$> delmap :: Event t (Map Int ())
-      delmap'' = fmap (const Nothing) <$> delmap' :: Event t (Map Int (Maybe (Maybe k)))
-      maximum' :: [Int] -> Int
-      maximum' [] = 0
-      maximum' xs = maximum xs
-      lastid = maximum' . M.keys <$> tmap :: Dynamic t Int
-  addE <- row $ md1 (pure ()) >> md2 (primaryButton "Больше элементов")
-  let addE' = attachPromptlyDynWith (\i _ -> [(i+1, Just Nothing)]) lastid addE :: Event t (Map Int (Maybe (Maybe k)))
-      updE = delmap'' <> addE'
-  pure $ fmap snd . sortBy (comparing fst) . M.toList <$> valmap
-  where
-    md1 = elClass "div" "col-md-1"
-    md10 = elClass "div" "col-md-10"
 
 -- | Part of form that allows dynamically input patination types with colors
 patinationForm :: MonadWidget t m => Maybe Patination -> m (Dynamic t (Maybe Patination))
