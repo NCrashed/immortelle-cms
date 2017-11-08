@@ -14,12 +14,19 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="bootstrap-material-datetimepicker.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
-
-    <!-- Compiled app -->
-    <script language="javascript" src="all.js"></script>
   </head>
   <body>
   </body>
+  <script src="bundleloader.min.js"></script>
+  <script>
+      var loader = new BundleLoader();
+
+      loader.onload = function() {
+          console.log("the script is loaded...");
+      }
+
+      loader.load("all.js");
+  </script>
   <script language="javascript" src="jquery-1.9.1.js"></script>
   <script language="javascript" src="bootstrap/js/bootstrap.min.js"></script>
   <script language="javascript" src="bootstrap/js/material.min.js"></script>

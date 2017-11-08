@@ -559,7 +559,7 @@ incrustationsForm incrs = do
       fmap join $ widgetHold (editForm mval) $ updated $ makeForm <$> tagD
       where
         editForm Nothing = makeForm IncrGlass
-        editFomr (Just v) = case v of
+        editForm (Just v) = case v of
           IncrustationGlass colors -> do
             clrs <- fmap S.fromList <$> manyInputs (S.toList colors) (colorField . fromMaybe Red)
             pure $ IncrustationGlass <$> clrs

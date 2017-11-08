@@ -13,7 +13,7 @@ import Web.Reflex.Bootstrap
 
 import qualified Data.Text as T
 
-foreign import javascript unsafe "$(window).scrollTo($('#'+$1), $2);"
+foreign import javascript unsafe "$(window)['scrollTo']($('#'+$1), $2);"
   js_scrollTo :: JSString -> Int -> IO ()
 
 -- | Scroll to given element with id within given amount of time
@@ -36,7 +36,7 @@ scrolledSuccess dt et = do
   et' <- delay 0.3 et
   performEvent_ $ ffor et' $ const $ scrollTo it dt
 
-foreign import javascript unsafe "$('#'+$1).focus();"
+foreign import javascript unsafe "$('#'+$1)['focus']();"
   js_setFocus :: JSString -> IO ()
 
 -- | Set focus to input element

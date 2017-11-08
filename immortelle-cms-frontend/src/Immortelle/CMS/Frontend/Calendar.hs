@@ -34,7 +34,7 @@ data DayCalendar t = DayCalendar {
   dayCalendarValue :: Dynamic t (Maybe Day)
 }
 
-foreign import javascript unsafe "$('#'+$1).bootstrapMaterialDatePicker({ time: false, format : 'YYYY-MM-DD' });" js_makeDatePicker :: JSString -> IO ()
+foreign import javascript unsafe "$('#'+$1)['bootstrapMaterialDatePicker']({ 'time': false, 'format' : 'YYYY-MM-DD' });" js_makeDatePicker :: JSString -> IO ()
 
 makeDatePicker :: MonadIO m => Text -> m ()
 makeDatePicker i = liftIO $ js_makeDatePicker $ pack . T.unpack $ i

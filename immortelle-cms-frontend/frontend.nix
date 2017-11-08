@@ -16,15 +16,18 @@ let
   optimizeCC = drv: pkgs.haskell.lib.overrideCabal drv (drv: {
     postFixup = ''
       cd $out/bin/immortelle-cms-frontend.jsexe
+      #cp all.js all.min.js
       ${pkgs.closurecompiler}/bin/closure-compiler all.js --compilation_level=ADVANCED_OPTIMIZATIONS \
         --externs=all.js.externs \
-        --externs=${../immortelle-cms-server/static/bootstrap/js/bootstrap.min.js} \
-        --externs=${../immortelle-cms-server/static/bootstrap/js/material.min.js} \
-        --externs=${../immortelle-cms-server/static/bootstrap/js/ripples.min.js} \
-        --externs=${../immortelle-cms-server/static/bootstrap-material-datetimepicker.js} \
         --externs=${../immortelle-cms-server/static/jquery-1.9.1.js} \
+        --externs=${../immortelle-cms-server/static/jquery-1.9.js.externs} \
         --externs=${../immortelle-cms-server/static/jquery.scrollTo.min.js} \
         --externs=${../immortelle-cms-server/static/moment-with-locales.js} \
+        --externs=${../immortelle-cms-server/static/bootstrap/js/bootstrap.min.js} \
+        --externs=${../immortelle-cms-server/static/bootstrap/js/ripples.min.js} \
+        --externs=${../immortelle-cms-server/static/bootstrap/js/material.min.js} \
+        --externs=${../immortelle-cms-server/static/bootstrap-material-datetimepicker.js} \
+        --externs=${../immortelle-cms-server/static/runmain.js} \
         --jscomp_off=duplicate \
         --jscomp_off=undefinedVars \
         --jscomp_off=externsValidation \
