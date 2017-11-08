@@ -5,6 +5,7 @@ module Immortelle.CMS.Types(
   , ProductCategory(..)
   , ProductCategoryData(..)
   , productCategoryFromData
+  , productVendorCode
   , AuthorCode(..)
   , Author(..)
   , Color(..)
@@ -15,18 +16,28 @@ module Immortelle.CMS.Types(
   , VendorCode(..)
   , Price(..)
   , Product(..)
+  , displayCategory
+  , displayPatination
+  , displayAuthor
+  , displayColor
+  , displayStone
+  , displayIncrustation
+  , displayPrice
   ) where
 
 import Data.Map.Strict (Map)
+import Data.Monoid ((<>))
 import Data.SafeCopy
 import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time
 import GHC.Generics
 import Immortelle.CMS.Aeson
+import Text.Printf
 import Web.HttpApiData
 
 import qualified Data.Set as S
+import qualified Data.Text as T
 
 -- | Kinds of bracelets
 data BraceletType = BraceletNet | BraceletLace | BraceletLeaf
@@ -236,6 +247,7 @@ data Product = Product {
 deriveSafeCopy 0 'base ''Product
 deriveJSON defaultOptions ''Product
 
+-- | Extract vendor code from product info
 productVendorCode :: Product -> VendorCode
 productVendorCode Product{..} = VendorCode {
     vcodeId = productId
@@ -244,3 +256,71 @@ productVendorCode Product{..} = VendorCode {
   , vcodeAuthors = S.map (authorCode . fst) productAuthors
   , vcodeIncrustations = productIncrustations
   }
+
+displayCategory :: ProductCategory -> Text
+displayCategory c = case c of
+  PendantLeaf -> "Кулон лист"
+  PendantOther -> "Кулон"
+  Necklace -> "Ожерелье"
+  Earings -> "Серьги"
+  Bracelet bt -> "Браслет " <> case bt of
+    BraceletNet -> "сетка"
+    BraceletLace -> "кружево"
+    BraceletLeaf -> "лист"
+  Ring -> "Кольцо"
+  Hair ht -> "Волосы " <> case ht of
+    HairPinWood -> "шпилька дерево"
+    HairPinCopper -> "шпилька медь"
+    Crest -> "гребень"
+    Barrette -> "заколка"
+  Brooch bt -> "Брошка " <> case bt of
+    BroochUsual -> ""
+    HatPin -> "шляпная булавка"
+    Fibula -> "фибула"
+  Bookmark -> "Закладка"
+  Grand -> "Гранд"
+
+displayColor :: Color -> Text
+displayColor c = case c of
+  Red -> "Красный"
+  Orange -> "Оранжевый"
+  Yellow -> "Желтый"
+  Green -> "Зеленый"
+  LightBlue -> "Голубой"
+  Blue -> "Синий"
+  Magenta -> "Фиолетовый"
+
+displayStone :: Stone -> Text
+displayStone st = case st of
+  Labrador -> "Лабрадор"
+  Amethyst -> "Аметист"
+  Quartz -> "Кварц"
+  Rauchtopaz -> "Раухтопаз"
+  Aquamarine -> "Аквамарин"
+  Rhinestone -> "Горный хрусталь"
+  Turquoise -> "Бирюза"
+  Peridot -> "Оливин"
+
+displayPatination :: Patination -> Text
+displayPatination p = case p of
+  PatinationRainbow clrs -> "Радужная " <> T.unwords (fmap displayColor . S.toList $ clrs)
+  PatinationAmmonia -> "Аммиак"
+  PatinationAmmoniaBlue -> "Аммиак синий"
+  PatinationSulfur -> "Сера"
+  PatinationGreen -> "Зеленая"
+  StainedGlassPaint clrs -> "Витражная краска " <> T.unwords (fmap displayColor . S.toList $ clrs)
+
+displayAuthor :: Author -> Text
+displayAuthor = authorName
+
+displayIncrustation :: Incrustation -> Text
+displayIncrustation v = case v of
+  IncrustationGlass clrs -> "Стекло " <> T.unwords (fmap displayColor . S.toList $ clrs)
+  IncrustationStone stns -> "Камень " <> T.unwords (fmap displayStone . S.toList $ stns)
+  IncrustationPearl -> "Жемчуг"
+  IncrustationBone -> "Кость"
+  _ -> ""
+
+displayPrice :: Price -> Text
+displayPrice p = case p of
+  PriceRub v -> T.pack . printf "%.2f" $ v

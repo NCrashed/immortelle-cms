@@ -1,9 +1,11 @@
 module Immortelle.CMS.Frontend.Product(
     productAddPage
+  , productListPage
   ) where
 
 import Control.Lens
 import Control.Monad (join)
+import Data.Bifunctor
 import Data.List (sortBy)
 import Data.Map.Strict (Map)
 import Data.Maybe
@@ -11,7 +13,8 @@ import Data.Monoid ((<>))
 import Data.Ord
 import Data.Set (Set)
 import Data.Text (Text, pack)
-import Immortelle.CMS.API
+import Data.Time
+import Immortelle.CMS.API hiding (PagedList, Page)
 import Immortelle.CMS.Frontend.Auth
 import Immortelle.CMS.Frontend.Calendar
 import Immortelle.CMS.Frontend.Client
@@ -20,6 +23,7 @@ import Immortelle.CMS.Frontend.Monad
 import Immortelle.CMS.Frontend.Scroll
 import Immortelle.CMS.Frontend.Utils
 import Immortelle.CMS.Types
+import Immortelle.CMS.VendorCode
 import Reflex.Dom
 import Web.Reflex.Bootstrap
 
@@ -33,10 +37,86 @@ productAddPage = do
   _ <- productCreate
   pure never
 
+productListPage :: forall t m . MonadFront t m => m (Event t CmsMenuItem)
+productListPage = fmap switchPromptlyDyn . route $ listWidget
+  where
+    listWidget = mdo
+      scrolledSuccess 500 $ ffor deletedE $ const "Изделие удалено!"
+      actionE <- productList deletedE
+      let editE = fforMaybe actionE $ \case
+            ProductEdit p -> Just p
+            _ -> Nothing
+          delE = fforMaybe actionE $ \case
+            ProductDelete i -> Just i
+            _ -> Nothing
+      delE' <- confirm def delE
+      deletedE <- dangerResult =<< deleteProduct delE'
+      let editR = Route $ editWidget <$> editE
+      pure (never, editR)
+    editWidget p = do
+      backE <- primaryButton "Назад"
+      productEdit p
+      pure (never, Route $ const listWidget <$> backE)
+
+-- | Action that user requests in 'productList'
+data ProductAction = ProductEdit Product | ProductDelete ProductId
+
+-- | Widget that allows to view all products in table view with search
+productList :: forall t m . MonadFront t m => Event t () -> m (Event t ProductAction)
+productList reloadExternalE = do
+  strD <- horizontalForm $ value <$> formGroupText "Поиск" def
+  let reloadE = leftmost [
+          () <$ updated strD
+        , reloadExternalE
+        ]
+  selectsD :: Dynamic t [Event t ProductAction] <- renderListReload (Just 5) tableHeader productInfoWidget (loadProducts strD) reloadE
+  pure $ switchPromptlyDyn $ fmap leftmost selectsD
+  where
+    tableHeader ma = tableHover mempty $ do
+      thead . tr $ do
+        th $ text "Артикул"
+        th $ text "Название"
+        th $ text "Категория"
+        th $ text "Патина"
+        th $ text "Авторы"
+        th $ text "Инкрустация"
+        th $ text "Сделан"
+        th $ text "Находится"
+        th $ text "Бронь"
+        th $ text "В группе"
+        th $ text "Цена"
+      tbody ma
+
+    productInfoWidget :: Product -> m (Event t ProductAction)
+    productInfoWidget c@Product{..} = tr $ do
+      td . text $ encodeVendorCode . productVendorCode $ c
+      td . text $ productName
+      td . text $ displayCategory . productCategoryFromData $ productCategory
+      td . text $ maybe "Нет" displayPatination productPatination
+      td . text $ T.intercalate " " . fmap (displayAuthor . fst) . S.toList $ productAuthors
+      td . text $ T.intercalate " " . fmap displayIncrustation . S.toList $ productIncrustations
+      td . text $ maybe "" (T.pack . formatTime defaultTimeLocale "YYYY-MM-DD") $ productCreation
+      td . text $ fromMaybe "" productLocation
+      td . text $ fromMaybe "" productBooked
+      td . text $ if productInGroup then "Да" else "Нет"
+      td . text $ displayPrice productPrice
+      -- action cell
+      td $ do
+        editE <- fmap (fmap $ const $ ProductEdit c) $ hrefTooltip TooltipBottom "Изменить" $ icon "edit"
+        delE <- fmap (fmap $ const $ ProductDelete productId) $ hrefTooltip TooltipBottom "Удалить" $ icon "delete"
+        pure $ leftmost [editE, delE]
+    loadProducts :: Dynamic t Text -> Event t Page -> m (Event t (PagedList Product))
+    loadProducts searchD epage = do
+      let searchD' = ffor searchD $ \str -> if T.null str then Nothing else Just str
+          ebody = attachPromptlyDynWith (\str n -> (str, PageInfo n 20)) searchD' epage
+      mresE <- listProducts ebody
+      handleDanger $ textifyResult <$> mresE
+
 productCreateFirstField :: Text
 productCreateFirstField = "product-create-first-field"
 
-productCreate :: forall t m . MonadFront t m => m (Event t ProductId )
+-- | Widget that contains form to create new product item
+productCreate :: forall t m . MonadFront t m => m (Event t ProductId)
 productCreate = mdo
   succDelayedE <- delay 0.3 succE
   scrolledSuccess 500 $ ffor succE $ \i -> "Новое изделие добавлено под ID: " <> showt i
@@ -48,9 +128,50 @@ productCreate = mdo
   pure succE
   where
     body v = do
-      prodDyn <- holdDyn v =<< productCreateForm v
+      prodDyn <- holdDyn v =<< productCreateForm "Создать" v
       prodIdE <- dangerResult =<< insertProduct (updated prodDyn)
       pure (prodIdE, prodDyn)
+
+toAuthorInfo :: Author -> AuthorInfo
+toAuthorInfo Author{..} = case authorCode of
+  AuthorOther -> UnknownAuthor authorName
+  _ -> KnownAuthor authorCode
+
+toCreateReq :: Product -> ProductCreate
+toCreateReq Product{..} = ProductCreate {
+    cproductName          = productName
+  , cproductCategory      = productCategory
+  , cproductPatination    = productPatination
+  , cproductAuthors       = S.map (first toAuthorInfo) productAuthors
+  , cproductIncrustations = productIncrustations
+  , cproductPrice         = productPrice
+  , cproductCreation      = productCreation
+  , cproductLocation      = productLocation
+  , cproductBooked        = productBooked
+  , cproductInGroup       = productInGroup
+  }
+
+toPatchReq :: ProductCreate -> ProductPatch
+toPatchReq ProductCreate{..} = ProductPatch {
+    pproductName          = cproductName
+  , pproductCategory      = cproductCategory
+  , pproductPatination    = cproductPatination
+  , pproductAuthors       = cproductAuthors
+  , pproductIncrustations = cproductIncrustations
+  , pproductPrice         = cproductPrice
+  , pproductCreation      = cproductCreation
+  , pproductLocation      = cproductLocation
+  , pproductBooked        = cproductBooked
+  , pproductInGroup       = cproductInGroup
+  }
+
+-- | Widget that contains form to edit existing product item
+productEdit :: forall t m . MonadFront t m => Product -> m (Event t ())
+productEdit v = mdo
+  scrolledSuccess 500 $ ffor succE $ const "Изделие обновлено!"
+  updE <- productCreateForm "Сохранить" $ toCreateReq v
+  succE <- dangerResult =<< updateProduct ((\cr -> (productId v, toPatchReq cr)) <$> updE)
+  pure succE
 
 categoryLabels :: Map ProductCategory Text
 categoryLabels = [
@@ -100,8 +221,8 @@ resetProductCreate p = p {
   }
 
 -- | Displays form that allows to form create request for product
-productCreateForm :: forall t m . MonadFront t m => ProductCreate -> m (Event t ProductCreate)
-productCreateForm pc0 = horizontalForm $ do
+productCreateForm :: forall t m . MonadFront t m => Text -> ProductCreate -> m (Event t ProductCreate)
+productCreateForm submText pc0 = horizontalForm $ do
    nameD <- textField' "Имя изделия" (def
       & textInputConfig_initialValue .~ cproductName pc0
       & textInputConfig_attributes .~ pure [("id", productCreateFirstField)])
@@ -115,7 +236,7 @@ productCreateForm pc0 = horizontalForm $ do
    locD <- mtextField "Место" (cproductLocation pc0)
    bookedD <- mtextField "Бронь" (cproductBooked pc0)
    groupD <- checkField "Выложен" (cproductInGroup pc0)
-   submitE <- submitButton "Создать"
+   submitE <- submitButton submText
    let requestD = ProductCreate
         <$> nameD
         <*> catDatumD

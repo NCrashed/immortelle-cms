@@ -22,6 +22,7 @@ data CmsMenu
 -- | Availiable items in menu
 data CmsMenuItem =
     ProductAddPage
+  | ProductListPage
   deriving (Eq, Ord, Show)
 
 instance MenuWidget CmsMenu where
@@ -29,4 +30,5 @@ instance MenuWidget CmsMenu where
   menuBrand _ = "Immortelle"
   menuItemLabel _ v = case v of
     ProductAddPage -> "Добавить изделие"
+    ProductListPage -> "Просмотр изделий"
   menuLogoutLabel _ = "Выйти"

@@ -5,6 +5,7 @@ module Immortelle.CMS.Frontend.Client(
   , insertProduct
   , updateProduct
   , deleteProduct
+  , listProducts
   -- ** Auth
   , authSignin
   , authSignout
@@ -58,6 +59,7 @@ data ServerClient t m = ServerClient {
 , insertProductMethod   :: DBody t ProductCreate                          -> DToken t '["product-edit"] -> DEndpoint t m ProductId
 , updateProductMethod   :: DCapture t ProductId  -> DBody t ProductPatch  -> DToken t '["product-edit"] -> DEndpoint t m ()
 , deleteProductMethod   :: DCapture t ProductId                           -> DToken t '["product-edit"] -> DEndpoint t m ()
+, listProductsMethod    :: DParam t Text -> DParam t PageInfo             -> DToken t '["product-read"] -> DEndpoint t m (PagedList Product)
 , authSigninMethod      :: DParam t Login -> Dynamic t (QParam Password) -> Dynamic t (QParam Seconds) -> DEndpoint t m (OnlyField "token" SimpleToken)
 , authSignoutMethod     :: DToken t '[] -> DEndpoint t m Unit
 , authTouchMethod       :: DParam t Seconds -> DToken t '[] -> DEndpoint t m Unit
@@ -73,6 +75,7 @@ serverEndpoints pm = ServerClient {..}
       :<|> insertProductMethod
       :<|> updateProductMethod
       :<|> deleteProductMethod
+      :<|> listProductsMethod
       :<|> authSigninMethod
       :<|> authSignoutMethod
       :<|> authTouchMethod
@@ -88,6 +91,11 @@ textifyResult r = case r of
 -- | Display error in danger panel
 dangerResult :: MonadWidget t m => Event t (ReqResult () a) -> m (Event t a)
 dangerResult = handleDanger . fmap textifyResult
+
+-- | Helpwer to transform Maybe to servant-reflex query param type
+toQParam :: Maybe a -> QParam a
+toQParam Nothing = QNone
+toQParam (Just a) = QParamSome a
 
 instance Functor QParam where
   fmap f v = case v of
@@ -108,14 +116,14 @@ wrapEndpoint _ endpoint tokenD bodyE = do
   endpoint bodyD tokenD' (void $ updated bodyD)
 
 -- | Transform from API paged list to frontend paged list
-transPagedList :: PagedList i a -> B.PagedList a
+transPagedList :: PagedList a -> B.PagedList a
 transPagedList l = B.PagedList {
-    B.pagedListItems = (\(WithField _ a) -> a) <$> pagedListItems l
+    B.pagedListItems = pagedListItems l
   , B.pagedListTotal = pagedListPages l
   }
 
 -- | Convinient helper of 'transPagedList'
-transPagedList' :: (Functor m, Reflex t) => m (Event t (ReqResult () (PagedList i a))) -> m (Event t (ReqResult () (B.PagedList a)))
+transPagedList' :: (Functor m, Reflex t) => m (Event t (ReqResult () (PagedList a))) -> m (Event t (ReqResult () (B.PagedList a)))
 transPagedList' = fmap . fmap . fmap $ transPagedList
 
 -- | Query server about product by id
@@ -155,6 +163,16 @@ deleteProduct bodyE = do
   endpoint bodyD (Right . Token <$> tokd) (void $ updated bodyD)
   where
     endpoint = deleteProductMethod $ serverEndpoints (Proxy :: Proxy m)
+
+-- | Query server about product by id
+listProducts :: forall t m . MonadFront t m => Event t (Maybe Text, PageInfo) -> m (Event t (ReqResult () (B.PagedList Product)))
+listProducts bodyE = do
+  tokd <- getAuthToken
+  searchD <- holdDyn QNone (toQParam . fst <$> bodyE)
+  pinfoD <- holdDyn QNone (QParamSome . snd <$> bodyE)
+  transPagedList' $ endpoint searchD pinfoD (Right . Token <$> tokd) (void bodyE)
+  where
+    endpoint = listProductsMethod $ serverEndpoints (Proxy :: Proxy m)
 
 -- | Login and get authorisation token
 authSignin :: forall t m a . MonadWidget t m => Event t (Login, Password, Seconds) -> m (Event t (ReqResult () SimpleToken))

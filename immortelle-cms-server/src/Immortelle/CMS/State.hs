@@ -6,6 +6,7 @@ module Immortelle.CMS.State(
   , GetProduct(..)
   , DeleteProduct(..)
   , GetAuthorByCode(..)
+  , ListProducts(..)
   -- Auth inherited
   , GetUserImpl(..)
   , GetUserImplByLogin(..)
@@ -50,11 +51,17 @@ module Immortelle.CMS.State(
 import Control.Monad.Reader
 import Control.Monad.State.Strict
 import Data.Acid
-import Data.SafeCopy
 import Data.Map.Strict (Map)
+import Data.Maybe
+import Data.SafeCopy
+import Data.Text (Text)
+import Immortelle.CMS.Pagination
 import Immortelle.CMS.Types
+import Immortelle.CMS.VendorCode
 
 import qualified Data.Map.Strict as M
+import qualified Data.Set as S
+import qualified Data.Text as T
 import qualified Servant.Server.Auth.Token.Acid.Schema as A
 
 data DB = DB {
@@ -103,6 +110,35 @@ getAuthorByCode ac = pure $ case ac of
   AuthorPolina -> Just $ Author "Полина" AuthorPolina
   AuthorOther -> Nothing
 
+listProducts :: Maybe Text -> Maybe PageInfo -> Query DB (PagedList Product)
+listProducts mtext mpage = do
+  let p = fromIntegral $ maybe 0 pageInfoPage mpage
+      s = fromIntegral $ maybe 20 pageInfoSize mpage
+      searchFilter = case mtext of
+        Nothing -> const True
+        Just rawQuery -> \p@Product{..} -> or [
+            contains $ encodeVendorCode . productVendorCode $ p
+          , contains productName
+          , contains $ displayCategory . productCategoryFromData $ productCategory
+          , contains $ maybe "" displayPatination productPatination
+          , contains $ T.intercalate " " . fmap (displayAuthor . fst) . S.toList $ productAuthors
+          , contains $ T.intercalate " " . fmap displayIncrustation . S.toList $ productIncrustations
+          , contains $ fromMaybe "" productLocation
+          , contains $ fromMaybe "" productBooked
+          ]
+          where
+            contains a = case t `T.breakOn` T.toLower a of
+              (_, "") -> False
+              _ -> True
+            t = T.toLower . T.strip $ rawQuery
+  products <- asks $ filter searchFilter . M.elems . dbProducts
+  let paged = take s . drop (p*s) $ products
+  pure $ PagedList {
+      pagedListPages = ceiling $ fromIntegral (length products) / fromIntegral s
+    , pagedListItems = paged
+    }
+
+
 A.deriveQueries ''DB
 makeAcidic ''DB $ [
     'genProductId
@@ -110,4 +146,5 @@ makeAcidic ''DB $ [
   , 'getProduct
   , 'deleteProduct
   , 'getAuthorByCode
+  , 'listProducts
   ] ++ A.acidQueries

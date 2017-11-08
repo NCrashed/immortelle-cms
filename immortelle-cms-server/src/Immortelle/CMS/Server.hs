@@ -47,6 +47,7 @@ immortelleCmsServer =
   :<|> productPost
   :<|> productPut
   :<|> productDelete
+  :<|> productList
   :<|> proxyAuthSignin
   :<|> proxyAuthSignout
   :<|> proxyAuthTouch
@@ -108,6 +109,11 @@ productDelete :: ProductId -> MToken' '["product-edit"] -> ServerM ()
 productDelete i tok = do
   runAuth $ guardAuthToken tok
   runUpdate $ DeleteProduct i
+
+productList :: Maybe Text -> Maybe PageInfo -> MToken' '["product-read"] -> ServerM (PagedList Product)
+productList mt pinfo tok = do
+  runAuth $ guardAuthToken tok
+  runQuery $ ListProducts mt pinfo
 
 proxyAuthSignin :: Maybe Login -> Maybe Password -> Maybe Seconds -> ServerM (OnlyField "token" SimpleToken)
 proxyAuthSignin mlogin mpass mseconds = runAuth $ authSignin mlogin mpass mseconds

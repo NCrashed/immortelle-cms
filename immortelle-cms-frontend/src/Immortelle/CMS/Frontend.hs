@@ -18,8 +18,9 @@ cmsFrontend = container $ mdo
   logoutE <- switchPromptlyDyn <$> startWithJust (pure never) bodyWidget mtokenD
   pure ()
   where
-  bodyWidget tokenD = flip runReaderT tokenD $ menuWidget (Proxy :: Proxy CmsMenu) ProductAddPage [
+  bodyWidget tokenD = flip runReaderT tokenD $ menuWidget (Proxy :: Proxy CmsMenu) ProductListPage [
       (ProductAddPage, productAddPage)
+    , (ProductListPage, productListPage)
     ]
 
 -- | Make a new dynamic that holds only 'Just' values from original dynamic

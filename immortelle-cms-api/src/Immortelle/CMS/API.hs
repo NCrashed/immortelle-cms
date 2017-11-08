@@ -53,6 +53,7 @@ type ImmortelleCmsAPI =
   :<|> "product" :> ReqBody '[JSON] ProductCreate :> TokenHeader' '["product-edit"] :> Post '[JSON] ProductId
   :<|> "product" :> Capture "id" ProductId :> ReqBody '[JSON] ProductPatch :> TokenHeader' '["product-edit"] :> Put '[JSON] ()
   :<|> "product" :> Capture "id" ProductId :> TokenHeader' '["product-edit"] :> Delete '[JSON] ()
+  :<|> "product" :> QueryParam "search" Text :> QueryParam "page" PageInfo :> TokenHeader' '["product-read"] :> Get '[JSON] (PagedList Product)
   :<|> AuthSigninMethod
   :<|> AuthSignoutMethod
   :<|> AuthTouchMethod
