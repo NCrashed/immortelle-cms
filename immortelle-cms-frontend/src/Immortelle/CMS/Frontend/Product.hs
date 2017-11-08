@@ -54,8 +54,23 @@ productListPage = fmap switchPromptlyDyn . route $ listWidget
       let editR = Route $ editWidget <$> editE
       pure (never, editR)
     editWidget p = do
-      backE <- primaryButton "Назад"
-      productEdit p
+      backBtnE <- primaryButton "Назад"
+      (updE, interProductD) <- productEdit p
+
+      -- Trick to ask confirmation if fields where changed
+      let confirmCfg = ConfirmConfig {
+              _confirmConfigTitle = "Данные не сохранены. Точно перейти назад?"
+            , _confirmConfigAcceptTitle = "Да"
+            , _confirmConfigCancelTitle = "Нет"
+            }
+      backCheckedE <- confirm confirmCfg $ flip push backBtnE $ const $ do
+        p' <- sample . current $ interProductD
+        pure $ if p' == p then Nothing else Just ()
+      let backUncheckedE = flip push backBtnE $ const $ do
+            p' <- sample . current $ interProductD
+            pure $ if p' == p then Just () else Nothing
+          backE = leftmost [backCheckedE, backUncheckedE]
+
       pure (never, Route $ const listWidget <$> backE)
 
 -- | Action that user requests in 'productList'
@@ -128,7 +143,7 @@ productCreate = mdo
   pure succE
   where
     body v = do
-      prodDyn <- holdDyn v =<< productCreateForm "Создать" v
+      prodDyn <- holdDyn v . fst =<< productCreateForm "Создать" v
       prodIdE <- dangerResult =<< insertProduct (updated prodDyn)
       pure (prodIdE, prodDyn)
 
@@ -165,13 +180,36 @@ toPatchReq ProductCreate{..} = ProductPatch {
   , pproductInGroup       = cproductInGroup
   }
 
+toAuthor :: AuthorInfo -> Author
+toAuthor v = case v of
+  KnownAuthor c -> case c of
+    AuthorOlga -> Author "Шеффер" c
+    AuthorSveta -> Author "Света" c
+    AuthorPolina -> Author "Полина" c
+    AuthorOther -> Author "" AuthorOther
+  UnknownAuthor t -> Author t AuthorOther
+
+applyPatch :: ProductPatch -> Product -> Product
+applyPatch ProductPatch{..} p = p {
+    productName          = pproductName
+  , productCategory      = pproductCategory
+  , productPatination    = pproductPatination
+  , productAuthors       = S.map (first toAuthor) pproductAuthors
+  , productIncrustations = pproductIncrustations
+  , productPrice         = pproductPrice
+  , productCreation      = pproductCreation
+  , productLocation      = pproductLocation
+  , productBooked        = pproductBooked
+  , productInGroup       = pproductInGroup
+  }
+
 -- | Widget that contains form to edit existing product item
-productEdit :: forall t m . MonadFront t m => Product -> m (Event t ())
+productEdit :: forall t m . MonadFront t m => Product -> m (Event t (), Dynamic t Product)
 productEdit v = mdo
   scrolledSuccess 500 $ ffor succE $ const "Изделие обновлено!"
-  updE <- productCreateForm "Сохранить" $ toCreateReq v
+  (updE, prodD) <- productCreateForm "Сохранить" $ toCreateReq v
   succE <- dangerResult =<< updateProduct ((\cr -> (productId v, toPatchReq cr)) <$> updE)
-  pure succE
+  pure (succE, (`applyPatch` v) . toPatchReq <$> prodD)
 
 categoryLabels :: Map ProductCategory Text
 categoryLabels = [
@@ -220,8 +258,10 @@ resetProductCreate p = p {
   , cproductInGroup       = False
   }
 
--- | Displays form that allows to form create request for product
-productCreateForm :: forall t m . MonadFront t m => Text -> ProductCreate -> m (Event t ProductCreate)
+-- | Displays form that allows to form create request for product.
+--
+-- Second return is intermidieate product after instant client side update.
+productCreateForm :: forall t m . MonadFront t m => Text -> ProductCreate -> m (Event t ProductCreate, Dynamic t ProductCreate)
 productCreateForm submText pc0 = horizontalForm $ do
    nameD <- textField' "Имя изделия" (def
       & textInputConfig_initialValue .~ cproductName pc0
@@ -248,7 +288,7 @@ productCreateForm submText pc0 = horizontalForm $ do
         <*> locD
         <*> bookedD
         <*> groupD
-   pure $ tagPromptlyDyn requestD submitE
+   pure (tagPromptlyDyn requestD submitE, requestD)
 
 -- | Selection of price
 -- TODO: other currencies
