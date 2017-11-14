@@ -23,6 +23,7 @@ library
     Immortelle.CMS.Types.Author.V1
     Immortelle.CMS.Types.Category
     Immortelle.CMS.Types.Category.V1
+    Immortelle.CMS.Types.Category.V2
     Immortelle.CMS.Types.Color
     Immortelle.CMS.Types.Color.V1
     Immortelle.CMS.Types.Color.V2

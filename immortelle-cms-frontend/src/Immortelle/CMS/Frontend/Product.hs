@@ -319,9 +319,10 @@ categoryFormEdit c = case c of
     mins <- mintField "Мин размер" w
     maxs <- mintField "Макс размер" h
     pure $ BraceletData <$> pure sub <*> mins <*> maxs
-  RingData s -> do
-    ringSize <- mintField "Размер" s
-    pure $ RingData <$> ringSize
+  RingData s adj -> do
+    ringSize <- mdoubleField "Размер" s
+    ringAdj <- checkField "Настраиваемый" adj
+    pure $ RingData <$> ringSize <*> ringAdj
   HairData sub w h wt -> do
     earingsWidth <- mdoubleField "Ширина" w
     earingsHeight <- mdoubleField "Длина" h
@@ -363,8 +364,9 @@ categoryForm c = case c of
     maxs <- mintField "Макс размер" Nothing
     pure $ BraceletData <$> pure sub <*> mins <*> maxs
   Ring -> do
-    ringSize <- mintField "Размер" Nothing
-    pure $ RingData <$> ringSize
+    ringSize <- mdoubleField "Размер" Nothing
+    ringAdj <- checkField "Настраиваемый" False
+    pure $ RingData <$> ringSize <*> ringAdj
   Hair sub -> do
     earingsWidth <- mdoubleField "Ширина" Nothing
     earingsHeight <- mdoubleField "Длина" Nothing
