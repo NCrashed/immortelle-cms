@@ -19,6 +19,23 @@ library
     Immortelle.CMS.API
     Immortelle.CMS.Pagination
     Immortelle.CMS.Types
+    Immortelle.CMS.Types.Author
+    Immortelle.CMS.Types.Author.V1
+    Immortelle.CMS.Types.Category
+    Immortelle.CMS.Types.Category.V1
+    Immortelle.CMS.Types.Color
+    Immortelle.CMS.Types.Color.V1
+    Immortelle.CMS.Types.Incrustation
+    Immortelle.CMS.Types.Incrustation.V1
+    Immortelle.CMS.Types.Incrustation.V2
+    Immortelle.CMS.Types.Patination
+    Immortelle.CMS.Types.Patination.V1
+    Immortelle.CMS.Types.Price
+    Immortelle.CMS.Types.Price.V1
+    Immortelle.CMS.Types.Product
+    Immortelle.CMS.Types.Product.V1
+    Immortelle.CMS.Types.Stone
+    Immortelle.CMS.Types.Stone.V1
     Immortelle.CMS.VendorCode
   build-depends:
       base                   >= 4.7    && < 5
