@@ -495,14 +495,22 @@ authorTagFromInfo c = case c of
 
 -- | Part of form that allows to add authors dynamically
 authorsForm :: forall t m . MonadWidget t m => Set (AuthorInfo, Double) -> m (Dynamic t (Set (AuthorInfo, Double)))
-authorsForm authors = do
+authorsForm authors = mdo
   formGroupLabel "Авторы" $ pure ()
-  fmap S.fromList <$> manyInputs (S.toList authors) authorForm
+  authorsList <- manyInputs (S.toList authors) $ authorForm countChEvent
+  countChEvent <- fmap updated . holdUniqDyn $ length <$> authorsList
+  let isNormalized as = let
+        sm = sum . fmap snd . S.toList $ as
+        in if S.null as then Right as else if abs (sm - 100) > 0.01
+          then Left $ "Сумма процентов не равна 100%! (Cумма: " <> showt sm <> ")"
+          else Right as
+  validate isNormalized mempty $ fmap S.fromList authorsList
   where
-    authorForm :: Maybe (AuthorInfo, Double) -> m (Dynamic t (AuthorInfo, Double))
-    authorForm mval = panel $ do
+    authorForm :: Event t Int -> Maybe (AuthorInfo, Double) -> m (Dynamic t (AuthorInfo, Double))
+    authorForm countE mval = panel $ do
       authD <- authInfoForm $ fst <$> mval
-      percent <- doubleField "Процент" $ maybe 100 snd mval
+      valD <- holdDyn (maybe 100 snd mval) $ ffor countE $ \n -> 100 / fromIntegral n
+      percent <- doubleDynField "Процент" valD
       pure $ (,) <$> authD <*> percent
 
     authInfoForm :: Maybe AuthorInfo -> m (Dynamic t AuthorInfo)

@@ -3,11 +3,13 @@ module Immortelle.CMS.Frontend.Utils(
   -- * Forms
   , mdoubleField
   , doubleField
+  , doubleDynField
   , mintField
   , mtextField
   , textField
   , textField'
   , checkField
+  , validate
   -- * Collections
   , manyInputs
   ) where
@@ -76,6 +78,26 @@ doubleField label val = do
     Right v -> Just v
     _ -> Nothing
 
+-- | Helper to parse double value from labeled input field and allows to forcelly update the value from outside
+doubleDynField :: forall t m . MonadWidget t m => Text -> Dynamic t Double -> m (Dynamic t Double)
+doubleDynField label valD = do
+  val <- sample . current $ valD
+  tinput <- formGroupText' label $ def
+    & textInputConfig_initialValue .~ showt val
+    & textInputConfig_setValue .~ fmap showt (updated valD)
+  let mres = do
+        val <- T.strip <$> _textInput_value tinput
+        pure $ case T.double val of
+          Left er -> Left $ "Число с точкой содержит ошибку! " <> pack er
+          Right (v, left) -> if T.null left then Right v
+            else Left $ "Лишние символы: " <> left
+  widgetHold (pure ()) $ ffor (updated mres) $ \case
+    Left er -> danger er
+    _ -> pure ()
+  holdDyn val $ fforMaybe (updated mres) $ \case
+    Right v -> Just v
+    _ -> Nothing
+
 -- | Helper to parse optional double from labeled input field
 mintField :: forall t m . MonadWidget t m => Text -> Maybe Int -> m (Dynamic t (Maybe Int))
 mintField label val0 = do
@@ -117,6 +139,26 @@ checkField label val = formGroupLabel label $ divClass "checkbox" $ el "label" $
   res <- _checkbox_value <$> checkbox val def
   spanClass "checkbox-material" $ spanClass "check" $ pure ()
   pure res
+
+-- | Pass through only those values that returns 'Right' in the predicate
+validate :: forall t m a b . MonadWidget t m
+  => (a -> Either Text b) -- ^ Validation predicate
+  -> b -- ^ initial value for output dynamic
+  -> Dynamic t a -- ^ stream of values that should be processed
+  -> m (Dynamic t b) -- ^ resulted stream with valid values
+validate f b0 da = do
+  a0 <- sample . current $ da
+  let validE = fforMaybe (updated da) $ \v -> case f v of
+        Right b -> Just b
+        _ -> Nothing
+      initError = case f a0 of
+        Left e -> danger e
+        _ -> pure ()
+  widgetHold initError $ ffor (updated da) $ \v -> case f v of
+    Left e -> danger e
+    _ -> pure ()
+  let initVal = either (const b0) id $ f a0
+  holdDyn initVal validE
 
 -- | Allows to input many values via dynamic count of simple fields
 manyInputs :: forall t m k a . MonadWidget t m => [k] -> (Maybe k -> m (Dynamic t a)) -> m (Dynamic t [a])
