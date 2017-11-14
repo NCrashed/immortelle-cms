@@ -109,7 +109,7 @@ productList reloadExternalE = do
       td . text $ displayCategory . productCategoryFromData $ productCategory
       td . text $ maybe "Нет" displayPatination productPatination
       td . text $ T.intercalate " " . fmap (displayAuthor . fst) . S.toList $ productAuthors
-      td . text $ T.intercalate " " . fmap displayIncrustation . S.toList $ productIncrustations
+      td . text $ T.intercalate " " . fmap displayIncrustationData . S.toList $ productIncrustations
       td . text $ maybe "" (T.pack . formatTime defaultTimeLocale "YYYY-MM-DD") $ productCreation
       td . text $ fromMaybe "" productLocation
       td . text $ fromMaybe "" productBooked
@@ -405,7 +405,7 @@ patinationLabels = [
     (NoPatination, "Без обработки")
   , (PatRainbow, "Радужная патина")
   , (PatAmmonia, "Аммиак обычный")
-  , (PatAmmonia, "Аммиак голубой")
+  , (PatAmmoniaBlue, "Аммиак голубой")
   , (PatSulfur, "Серная патина")
   , (PatGreen, "Зеленая патина")
   , (PatStainedGlass, "Витражная краска")
@@ -420,6 +420,9 @@ colorLabels = [
   , (LightBlue, "Голубой")
   , (Blue, "Синий")
   , (Magenta, "Фиолетовый")
+  , (White, "Белый")
+  , (Black, "Чёрный")
+  , (Pink, "Розовый")
   ]
 
 -- | Select color from dropdown
@@ -523,36 +526,46 @@ authorsForm authors = do
 -- | Tags incrustations types
 data IncrustationTag =
     IncrGlass
+  | IncrGlassDichroic
   | IncrStone
-  | IncrPearl
+  | IncrPearlDark
+  | IncrPearlBright
+  | IncrPorcelain
   | IncrBone
   | IncrOther
   deriving (Eq, Ord, Show, Read)
 
-toIncrustationTag :: Incrustation -> IncrustationTag
+toIncrustationTag :: IncrustationData -> IncrustationTag
 toIncrustationTag v = case v of
-  IncrustationGlass _ -> IncrGlass
-  IncrustationStone _ -> IncrStone
-  IncrustationPearl -> IncrPearl
-  IncrustationBone -> IncrBone
-  IncrustationOther -> IncrOther
+  IncrustationDataGlass _ -> IncrGlass
+  IncrustationDataGlassDichroic _ -> IncrGlassDichroic
+  IncrustationDataStone _ -> IncrStone
+  IncrustationDataPearl pt -> case pt of
+    PearlDark -> IncrPearlDark
+    PearlBright -> IncrPearlBright
+  IncrustationDataPorcelain _ -> IncrPorcelain
+  IncrustationDataBone -> IncrBone
+  IncrustationDataOther _ -> IncrOther
 
 incrustationLabels :: Map IncrustationTag Text
 incrustationLabels = [
     (IncrGlass, "Стекло")
+  , (IncrGlassDichroic, "Стекло дихроическое")
   , (IncrStone, "Камень")
-  , (IncrPearl, "Жемчуг")
+  , (IncrPearlBright, "Жемчуг светлый")
+  , (IncrPearlDark, "Жемчуг тёмный")
+  , (IncrPorcelain, "Фарфор")
   , (IncrBone, "Кость")
   , (IncrOther, "Другое")
   ]
 
 -- | Part of form that allows to add incrustations dynamically
-incrustationsForm :: forall t m . MonadWidget t m => Set Incrustation -> m (Dynamic t (Set Incrustation))
+incrustationsForm :: forall t m . MonadWidget t m => Set IncrustationData -> m (Dynamic t (Set IncrustationData))
 incrustationsForm incrs = do
   formGroupLabel "Вставки" $ pure ()
   fmap S.fromList <$> manyInputs (S.toList incrs) incrustationForm
   where
-    incrustationForm :: Maybe Incrustation -> m (Dynamic t Incrustation)
+    incrustationForm :: Maybe IncrustationData -> m (Dynamic t IncrustationData)
     incrustationForm mval = panel $ do
       let initVal = maybe IncrGlass toIncrustationTag mval
       tagD <- _dropdown_value <$> formGroupSelect "Вставка" initVal (pure incrustationLabels) def
@@ -560,22 +573,39 @@ incrustationsForm incrs = do
       where
         editForm Nothing = makeForm IncrGlass
         editForm (Just v) = case v of
-          IncrustationGlass colors -> do
+          IncrustationDataGlass colors -> do
             clrs <- fmap S.fromList <$> manyInputs (S.toList colors) (colorField . fromMaybe Red)
-            pure $ IncrustationGlass <$> clrs
-          IncrustationStone stones -> do
+            pure $ IncrustationDataGlass <$> clrs
+          IncrustationDataGlassDichroic colors -> do
+            clrs <- fmap S.fromList <$> manyInputs (S.toList colors) (colorField . fromMaybe Red)
+            pure $ IncrustationDataGlassDichroic <$> clrs
+          IncrustationDataStone stones -> do
             stns <- fmap S.fromList <$> manyInputs (S.toList stones) (stoneField . fromMaybe Quartz)
-            pure $ IncrustationStone <$> stns
-          IncrustationPearl -> pure . pure $ IncrustationPearl
-          IncrustationBone -> pure . pure $ IncrustationBone
-          IncrustationOther -> pure . pure $ IncrustationOther
+            pure $ IncrustationDataStone <$> stns
+          IncrustationDataPearl pt -> pure . pure $ IncrustationDataPearl pt
+          IncrustationDataPorcelain colors -> do
+            clrs <- fmap S.fromList <$> manyInputs (S.toList colors) (colorField . fromMaybe White)
+            pure $ IncrustationDataPorcelain <$> clrs
+          IncrustationDataBone -> pure . pure $ IncrustationDataBone
+          IncrustationDataOther other -> do
+            name <- textField "Другое" other
+            pure $ IncrustationDataOther <$> name
         makeForm tg = case tg of
           IncrGlass -> do
             clrs <- fmap S.fromList <$> manyInputs [Red] (colorField . fromMaybe Red)
-            pure $ IncrustationGlass <$> clrs
+            pure $ IncrustationDataGlass <$> clrs
+          IncrGlassDichroic -> do
+            clrs <- fmap S.fromList <$> manyInputs [Red] (colorField . fromMaybe Red)
+            pure $ IncrustationDataGlassDichroic <$> clrs
           IncrStone -> do
             stns <- fmap S.fromList <$> manyInputs [Quartz] (stoneField . fromMaybe Labrador)
-            pure $ IncrustationStone <$> stns
-          IncrPearl -> pure . pure $ IncrustationPearl
-          IncrBone -> pure . pure $ IncrustationBone
-          IncrOther -> pure . pure $ IncrustationOther
+            pure $ IncrustationDataStone <$> stns
+          IncrPearlDark -> pure . pure $ IncrustationDataPearl PearlDark
+          IncrPearlBright -> pure . pure $ IncrustationDataPearl PearlBright
+          IncrPorcelain -> do
+            clrs <- fmap S.fromList <$> manyInputs [] (colorField . fromMaybe White)
+            pure $ IncrustationDataPorcelain <$> clrs
+          IncrBone -> pure . pure $ IncrustationDataBone
+          IncrOther -> do
+            name <- textField "Другое" ""
+            pure $ IncrustationDataOther <$> name

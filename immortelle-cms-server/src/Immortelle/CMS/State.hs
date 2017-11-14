@@ -122,7 +122,7 @@ listProducts mtext mpage = do
           , contains $ displayCategory . productCategoryFromData $ productCategory
           , contains $ maybe "" displayPatination productPatination
           , contains $ T.intercalate " " . fmap (displayAuthor . fst) . S.toList $ productAuthors
-          , contains $ T.intercalate " " . fmap displayIncrustation . S.toList $ productIncrustations
+          , contains $ T.intercalate " " . fmap displayIncrustationData . S.toList $ productIncrustations
           , contains $ fromMaybe "" productLocation
           , contains $ fromMaybe "" productBooked
           ]

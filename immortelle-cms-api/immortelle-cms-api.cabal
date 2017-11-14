@@ -25,6 +25,7 @@ library
     Immortelle.CMS.Types.Category.V1
     Immortelle.CMS.Types.Color
     Immortelle.CMS.Types.Color.V1
+    Immortelle.CMS.Types.Color.V2
     Immortelle.CMS.Types.Incrustation
     Immortelle.CMS.Types.Incrustation.V1
     Immortelle.CMS.Types.Incrustation.V2
@@ -34,6 +35,7 @@ library
     Immortelle.CMS.Types.Price.V1
     Immortelle.CMS.Types.Product
     Immortelle.CMS.Types.Product.V1
+    Immortelle.CMS.Types.Product.V2
     Immortelle.CMS.Types.Stone
     Immortelle.CMS.Types.Stone.V1
     Immortelle.CMS.VendorCode

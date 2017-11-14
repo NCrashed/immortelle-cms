@@ -25,7 +25,7 @@ data ProductCreate = ProductCreate {
 , cproductCategory      :: ProductCategoryData
 , cproductPatination    :: Maybe Patination
 , cproductAuthors       :: Set (AuthorInfo, Double)
-, cproductIncrustations :: Set Incrustation
+, cproductIncrustations :: Set IncrustationData
 , cproductPrice         :: Price
 , cproductCreation      :: Maybe Day
 , cproductLocation      :: Maybe Text
@@ -39,7 +39,7 @@ data ProductPatch = ProductPatch {
 , pproductCategory      :: ProductCategoryData
 , pproductPatination    :: Maybe Patination
 , pproductAuthors       :: Set (AuthorInfo, Double)
-, pproductIncrustations :: Set Incrustation
+, pproductIncrustations :: Set IncrustationData
 , pproductPrice         :: Price
 , pproductCreation      :: Maybe Day
 , pproductLocation      :: Maybe Text
