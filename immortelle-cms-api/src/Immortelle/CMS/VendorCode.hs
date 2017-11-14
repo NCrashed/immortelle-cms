@@ -55,6 +55,9 @@ encodeVendorCode VendorCode{..} = T.intercalate "-" [
       LightBlue -> "Г"
       Blue      -> "С"
       Magenta   -> "Ф"
+      White     -> "Б"
+      Black     -> "Ч"
+      Pink      -> "Р"
     encodePatination Nothing = "Н"
     encodePatination (Just p) = case p of
       PatinationRainbow cls   -> "РАД" <> foldMap encodeColor cls
@@ -81,11 +84,13 @@ encodeVendorCode VendorCode{..} = T.intercalate "-" [
       Turquoise -> "БИР"
       Peridot -> "ОЛИВ"
     encodeIncr i = case i of
-      IncrustationGlass cls  -> "С" <> foldMap encodeColor cls
-      IncrustationStone stns -> "К" <> foldMap encodeStone stns
-      IncrustationPearl      -> "ЖЕМ"
-      IncrustationBone       -> "КОСТ"
-      IncrustationOther      -> "ДРУГ"
+      IncrustationGlass cls         -> "С" <> foldMap encodeColor cls
+      IncrustationGlassDichroic cls -> "ДС" <> foldMap encodeColor cls
+      IncrustationStone stns        -> "К" <> foldMap encodeStone stns
+      IncrustationPearl             -> "ЖЕМ"
+      IncrustationPorcelain cls     -> "Ф" <> foldMap encodeColor cls
+      IncrustationBone              -> "КОСТ"
+      IncrustationOther             -> "ДРУГ"
     encodeIncrs xs
       | S.null xs = "Н"
       | otherwise = T.intercalate ":" . fmap encodeIncr . toList $ xs
@@ -139,6 +144,9 @@ vendorCode = do
       <|> (char 'Г' *> pure LightBlue)
       <|> (char 'С' *> pure Blue)
       <|> (char 'Ф' *> pure Magenta)
+      <|> (char 'Б' *> pure White)
+      <|> (char 'Ч' *> pure Black)
+      <|> (char 'Р' *> pure Pink)
     patination = label "patination" $
           try (string "РАД" *> fmap (PatinationRainbow . S.fromList) (many color))
       <|> try (string "АГ" *> pure PatinationAmmoniaBlue)
@@ -157,8 +165,10 @@ vendorCode = do
       <|> (string "ОЛИВ" *> pure Peridot)
     incrustation = label "incrustation" $
           (char 'С' *> fmap (IncrustationGlass . S.fromList) (many color))
+      <|> (string "ДС" *> fmap (IncrustationGlassDichroic . S.fromList) (many color))
       <|> (string "КОСТ" *> pure IncrustationBone)
       <|> (char 'К' *> fmap (IncrustationStone . S.fromList) (many stone))
+      <|> (char 'Ф' *> fmap (IncrustationPorcelain . S.fromList) (many color))
       <|> (string "ЖЕМ" *> pure IncrustationPearl)
       <|> (string "ДРУГ" *> pure IncrustationOther)
     author = label "author" $
