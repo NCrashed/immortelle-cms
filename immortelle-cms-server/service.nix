@@ -24,11 +24,18 @@ in {
           Whether to enable Immortelle CMS server by default.
         '';
       };
+      domain = mkOption {
+        type = types.str;
+        default = "immortelle.me";
+        description = ''
+          Domain of immortelle site.
+        '';
+      };
       config = mkOption {
         type = types.str;
         default = ''
           host: 127.0.0.1
-          port: 80
+          port: 3000
           static: ${./static}
           frontendBlob: ${frontend.immortelle-cms-frontend}/bin/immortelle-cms-frontend.jsexe/all.min.js
           detailedLogging: true
@@ -61,6 +68,18 @@ in {
           User = "root";
         };
       wantedBy = ["multi-user.target"];
+    };
+    services.nginx = {
+      enable = true;
+      recommendedGzipSettings = true;
+      recommendedOptimisation = true;
+      recommendedProxySettings = true;
+      recommendedTlsSettings = true;
+      virtualHosts."${immortelle-cms-server-cfg.domain}" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/".proxyPass = "http://localhost:3000";
+      };
     };
   };
 }

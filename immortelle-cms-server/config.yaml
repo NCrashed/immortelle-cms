@@ -1,8 +1,9 @@
 host: 127.0.0.1
 port: 8080
 static: ./static
+acmePath: ./static
 frontendBlob: ./static/all.js
 detailedLogging: true
 state: ./db
 adminPassword: "123456"
-cacheFolder: ./cache 
+cacheFolder: ./cache

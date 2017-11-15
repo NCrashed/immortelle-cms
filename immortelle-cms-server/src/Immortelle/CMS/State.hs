@@ -7,6 +7,9 @@ module Immortelle.CMS.State(
   , DeleteProduct(..)
   , GetAuthorByCode(..)
   , ListProducts(..)
+  , DebugInfo(..)
+  , ExportAll(..)
+  , ImportAll(..)
   -- Auth inherited
   , GetUserImpl(..)
   , GetUserImplByLogin(..)
@@ -133,11 +136,25 @@ listProducts mtext mpage = do
             t = T.toLower . T.strip $ rawQuery
   products <- asks $ filter searchFilter . M.elems . dbProducts
   let paged = take s . drop (p*s) $ products
-  pure $ PagedList {
+  pure PagedList {
       pagedListPages = ceiling $ fromIntegral (length products) / fromIntegral s
     , pagedListItems = paged
     }
 
+debugInfo :: Query DB Text
+debugInfo = asks $ T.pack . show . length . dbProducts
+
+exportAll :: Query DB [Product]
+exportAll = asks $ M.elems . dbProducts
+
+importAll :: [Product] -> Update DB ()
+importAll [] = pure ()
+importAll ps = do
+  let maxi = maximum $ unProductId . productId <$> ps
+  modify' $ \db -> db {
+      dbProducts = M.fromList $ fmap productId ps `zip` ps
+    , dbNextId = ProductId $ maxi + 1
+    }
 
 A.deriveQueries ''DB
 makeAcidic ''DB $ [
@@ -147,4 +164,7 @@ makeAcidic ''DB $ [
   , 'deleteProduct
   , 'getAuthorByCode
   , 'listProducts
+  , 'debugInfo
+  , 'exportAll
+  , 'importAll
   ] ++ A.acidQueries

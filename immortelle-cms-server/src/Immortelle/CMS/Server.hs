@@ -24,6 +24,7 @@ import Servant.Server.Auth.Token
 import Servant.Utils.StaticFiles (serveDirectoryFileServer)
 
 import qualified Data.Set as S
+import qualified Data.Text.IO as T
 
 -- | WAI application for server
 immortelleCmsApp :: Env -> Application
@@ -31,14 +32,18 @@ immortelleCmsApp e = gzip (def { gzipFiles = GzipCacheFolder . unConfigPath $ co
   where
     Config{..} = envConfig e
 
-    -- Manual response with frontend blob
     frontendMiddleware :: Middleware
-    frontendMiddleware oldApp req doResp = case (configFrontendBlob, pathInfo req) of
+    frontendMiddleware = blobMiddle
+
+    -- Manual response with frontend blob
+    blobMiddle :: Middleware
+    blobMiddle oldApp req doResp = case (configFrontendBlob, pathInfo req) of
       (Just (ConfigPath blobPath), "all.js":_) -> doResp $ responseFile ok200 [("Content-Type", "application/javascript")] blobPath Nothing
       _ -> oldApp req doResp
 
-    servantApp = serve (Proxy :: Proxy (ImmortelleCmsAPI :<|> Raw)) $ enter (serverMtoHandler e) immortelleCmsServer
-      :<|> serveDirectoryFileServer (unConfigPath configStatic)
+    servantApp = serve (Proxy :: Proxy (ImmortelleCmsAPI  :<|> Raw)) $ enter (serverMtoHandler e) immortelleCmsServer
+      :<|> statics
+    statics = serveDirectoryFileServer (unConfigPath configStatic)
 
 -- | Servant API implementation for VPN master
 immortelleCmsServer :: ServerT ImmortelleCmsAPI ServerM
@@ -113,6 +118,7 @@ productDelete i tok = do
 productList :: Maybe Text -> Maybe PageInfo -> MToken' '["product-read"] -> ServerM (PagedList Product)
 productList mt pinfo tok = do
   runAuth $ guardAuthToken tok
+  liftIO . T.putStrLn =<< runQuery DebugInfo
   runQuery $ ListProducts mt pinfo
 
 proxyAuthSignin :: Maybe Login -> Maybe Password -> Maybe Seconds -> ServerM (OnlyField "token" SimpleToken)
